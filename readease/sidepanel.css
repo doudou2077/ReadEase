@@ -31,7 +31,7 @@ body {
     width: fit-content;
     max-width: 85%;
     word-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: pre-wrap; /* Preserve line breaks */
   }
   
   .user-message {
@@ -58,6 +58,7 @@ body {
     background-color: white;
     border-radius: 8px;
     border: 1px solid #ccc;
+    overflow: hidden; /* Contain everything inside the wrapper */
   }
   
   #message-input {
@@ -72,11 +73,13 @@ body {
     resize: none;
     box-sizing: border-box;
     background: transparent;
-    overflow-y: auto;
-  }
-  
-  #message-input:focus {
-    outline: none;
+    overflow-y: scroll;
+    white-space: pre-wrap; /* Preserve line breaks */
+    position: absolute; /* Keep input contained */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
   
   #send-button {
