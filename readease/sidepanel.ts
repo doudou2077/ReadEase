@@ -7,24 +7,27 @@ const sendButton = document.getElementById('send-button') as HTMLButtonElement;
 interface Message {
   target: string;
   feature: 'simplify' | 'summarize' | 'tts';
+  text: string;
 }
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message: Message) => {
+  console.log("Sidepanel received text:", message.text);
+  console.log("Received Message:", message);
   if (message.target === "sidepanel") {
-      let promptMessage = "";
-      switch(message.feature) {
-          case "simplify":
-              promptMessage = "Please simplify the following text:";
-              break;
-          case "summarize":
-              promptMessage = "Please summarize the following text:";
-              break;
-          case "tts":
-              promptMessage = "Please convert the following text to speech:";
-              break;
-      }
-      addMessage(promptMessage, false);
+    let promptMessage = "";
+    switch (message.feature) {
+      case "simplify":
+        promptMessage = "Please simplify the following text:";
+        break;
+      case "summarize":
+        promptMessage = "Please summarize the following text:";
+        break;
+      case "tts":
+        promptMessage = "Please convert the following text to speech:";
+        break;
+    }
+    addMessage(`${promptMessage}\n${message.text}`, false);
   }
 });
 
@@ -57,7 +60,7 @@ const handleSend = () => {
   if (message) {
     addMessage(message, true);
     messageInput.value = '';
-    
+
     // Simulate assistant response (replace with actual AI integration)
     setTimeout(() => {
       addMessage("I'm a demo assistant. Real AI responses will be implemented soon!", false);
