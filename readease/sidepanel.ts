@@ -1,5 +1,8 @@
 /// <reference types="chrome" />
 
+// Notify background script that sidepanel is ready
+chrome.runtime.sendMessage({ action: "sidepanel_ready" });
+
 const chatContainer = document.getElementById('chat-container') as HTMLDivElement;
 const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
 const sendButton = document.getElementById('send-button') as HTMLButtonElement;

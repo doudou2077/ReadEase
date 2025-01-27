@@ -9,6 +9,17 @@ chrome.action.onClicked.addListener((tab) => {
     }
 });
 
+// Keep track of sidepanel state
+let sidePanelReady = false;
+
+// Listen for messages from sidepanel to know when it's ready
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "sidepanel_ready") {
+        sidePanelReady = true;
+        return;
+    }
+});
+
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Background received text:", message.text);
@@ -16,7 +27,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "openSidePanel") {
         chrome.sidePanel.open({ windowId: sender.tab.windowId })
             .then(() => {
-                console.log("Side panel opened, sending message");
+                // Wait for sidepanel to be ready before sending message
+                return new Promise((resolve) => {
+                    const checkReady = () => {
+                        if (sidePanelReady) {
+                            resolve();
+                        } else {
+                            setTimeout(checkReady, 100); // Check every 100ms
+                        }
+                    };
+                    checkReady();
+                });
+            })
+            .then(() => {
+                console.log("Side panel ready, sending message");
                 return chrome.runtime.sendMessage({
                     target: "sidepanel",
                     feature: message.feature,
