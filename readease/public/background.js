@@ -1,11 +1,12 @@
 chrome.action.onClicked.addListener((tab) => {
-    // Inject the content script into the active tab
-    if (tab.id !== undefined) {
+    if (tab.id !== undefined && !tab.url.startsWith("chrome://")) {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: ["content.js"]
         });
+    } else {
+        console.error("Cannot execute script on chrome:// URLs.");
     }
-  });
+});
 
   
