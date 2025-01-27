@@ -13,10 +13,4 @@ chrome.action.onClicked.addListener((tab) => {
     } else {
         console.error("Cannot execute script on chrome:// URLs.");
     }
-<<<<<<< HEAD
-  });
-=======
 });
-
-  
->>>>>>> d69e34805fc16a42931576a3fa08a003b9ff4d5d
