@@ -1,6 +1,32 @@
+/// <reference types="chrome" />
+
 const chatContainer = document.getElementById('chat-container') as HTMLDivElement;
 const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
 const sendButton = document.getElementById('send-button') as HTMLButtonElement;
+
+interface Message {
+  target: string;
+  feature: 'simplify' | 'summarize' | 'tts';
+}
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((message: Message) => {
+  if (message.target === "sidepanel") {
+      let promptMessage = "";
+      switch(message.feature) {
+          case "simplify":
+              promptMessage = "Please simplify the following text:";
+              break;
+          case "summarize":
+              promptMessage = "Please summarize the following text:";
+              break;
+          case "tts":
+              promptMessage = "Please convert the following text to speech:";
+              break;
+      }
+      addMessage(promptMessage, false);
+  }
+});
 
 // Load chat history from localStorage
 const loadChatHistory = () => {

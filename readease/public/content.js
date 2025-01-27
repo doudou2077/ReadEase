@@ -111,13 +111,15 @@ hoverIcon.addEventListener("click", () => {
 
   // Add event listeners for buttons (you can define the actions later)
   simplifyButton.addEventListener("click", () => {
-      alert("Simplify clicked!");
+    //   alert("Simplify clicked!");
       // Add your simplify logic here
+      chrome.runtime.sendMessage({ action: "openSidePanel", feature: "simplify" });
   });
 
   summarizeButton.addEventListener("click", () => {
-      alert("Summarize clicked!");
+    //   alert("Summarize clicked!");
       // Add your summarize logic here
+      chrome.runtime.sendMessage({ action: "openSidePanel", feature: "summarize" });
   });
 
   textToSpeechButton.addEventListener("click", () => {
