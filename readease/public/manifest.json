@@ -4,11 +4,26 @@
     "name": "ReadEase",
     "description": "A browser extension that makes web content more accessible through text simplification, summarization, and text-to-speech features. Designed to support users with language impairment.",
     "action": {
+
         "default_title": "Click to show the hover icon!"
+
     },
     "permissions": [
         "activeTab",
-        "scripting"
+        "scripting",
+        "sidePanel"
+    ],
+    "side_panel": {
+        "default_path": "sidepanel.html"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
     ],
     "host_permissions": [
         "http://*/*",
@@ -16,8 +31,5 @@
     ],
     "icons": {
         "32": "icon32.png"
-    },
-    "background": {
-        "service_worker": "background.js"
     }
 }
