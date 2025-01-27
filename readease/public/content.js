@@ -3,14 +3,18 @@ console.log("Content script loaded");
 // Variable to store the selected text
 let lastSelectedText = '';
 
+const isTextCurrentlySelected = () => {
+  const selection = window.getSelection();
+  const currentText = selection ? selection.toString().trim() : '';
+  return currentText === lastSelectedText && currentText.length > 0;
+};
+
 // Add a selection change listener
 document.addEventListener('selectionchange', () => {
   const selection = window.getSelection();
   const newText = selection ? selection.toString().trim() : '';
-  if (newText) {  // Only update if there's actual text selected
-    lastSelectedText = newText;
-    console.log("Text selected and stored:", lastSelectedText);
-  }
+  lastSelectedText = newText;  // Update lastSelectedText even if empty
+  console.log("Text selection changed:", lastSelectedText);
 });
 
 // Function to create modal
@@ -54,36 +58,60 @@ const createModal = (selectedText) => {
 
   // Add event listeners for buttons
   simplifyButton.addEventListener("click", () => {
-    console.log("Sending text to background:", selectedText);
-    chrome.runtime.sendMessage({
-      action: "openSidePanel",
-      feature: "simplify",
-      text: selectedText
-    }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("Runtime error:", chrome.runtime.lastError);
-      } else {
-        console.log("Message sent successfully");
-      }
-    });
+    if (isTextCurrentlySelected()) {
+      console.log("Sending text to background:", lastSelectedText);
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "simplify",
+        text: lastSelectedText
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Runtime error:", chrome.runtime.lastError);
+        } else {
+          console.log("Message sent successfully");
+          modal.remove();
+        }
+      });
+    } else {
+      console.log("No text currently selected");
+      alert("Please select some text first.");
+      modal.remove();
+    }
   });
 
+
   summarizeButton.addEventListener("click", () => {
-    console.log("Summarize button clicked");
-    chrome.runtime.sendMessage({
-      action: "openSidePanel",
-      feature: "summarize",
-      text: selectedText
-    });
+    if (isTextCurrentlySelected()) {
+      console.log("Summarize button clicked");
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "summarize",
+        text: lastSelectedText
+      }, () => {
+        modal.remove();
+      });
+    } else {
+      console.log("No text currently selected");
+      alert("Please select some text first.");
+      modal.remove();
+    }
   });
 
   textToSpeechButton.addEventListener("click", () => {
-    console.log("Text-to-Speech button clicked");
-    chrome.runtime.sendMessage({
-      action: "openSidePanel",
-      feature: "tts",
-      text: selectedText
-    });
+    if (isTextCurrentlySelected()) {
+      console.log("Text-to-Speech button clicked");
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "tts",
+        text: lastSelectedText
+      }, () => {
+        modal.remove();
+      });
+    } else {
+      console.log("No text currently selected");
+      alert("Please select some text first.");
+      modal.remove();
+    }
   });
 
   // Append buttons to modal
