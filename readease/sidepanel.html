@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Side Panel</title>
+  <title>ReadEase Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
 <body>
-  <textarea id="note" cols="30" rows="10"></textarea><br>
-  <input type="button" id="save" value="Save">
-  <script src="sidepanel.ts"></script>
+  <div id="chat-container">
+    <div class="message assistant-message">
+      Hello! I'm ReadEase Assistant. How can I help you today?
+    </div>
+  </div>
+  <div id="input-container">
+    <div id="input-wrapper">
+      <textarea 
+        id="message-input" 
+        placeholder="Type your message here..."
+        rows="1"
+      ></textarea>
+      <button id="send-button">
+        <span class="material-icons">send</span>
+      </button>
+    </div>
+  </div>
+  <script type="module" src="sidepanel.ts"></script>
 </body>
 </html>
