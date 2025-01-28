@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && copy public\\* dist\\",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "build": "tsc -b && vite build && cp -R public/* dist/"
   },
   "dependencies": {
     "react": "^18.3.1",
