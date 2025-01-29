@@ -1,3 +1,5 @@
+import { generateContent } from './api.js';
+
 chrome.action.onClicked.addListener((tab) => {
     if (tab.id !== undefined && !tab.url.startsWith("chrome://")) {
         chrome.scripting.executeScript({
@@ -20,32 +22,57 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// Listen for messages from content script
+
+// message listener for content script messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Background received text:", message.text);
     console.log("Background script received message:", message);
     if (message.action === "openSidePanel") {
         chrome.sidePanel.open({ windowId: sender.tab.windowId })
             .then(() => {
-                // Wait for sidepanel to be ready before sending message
+                // Wait for sidepanel to be ready
                 return new Promise((resolve) => {
                     const checkReady = () => {
                         if (sidePanelReady) {
                             resolve();
                         } else {
-                            setTimeout(checkReady, 100); // Check every 100ms
+                            setTimeout(checkReady, 100);
                         }
                     };
                     checkReady();
                 });
             })
-            .then(() => {
-                console.log("Side panel ready, sending message");
-                return chrome.runtime.sendMessage({
-                    target: "sidepanel",
-                    feature: message.feature,
-                    text: message.text
-                });
+            .then(async () => {
+                let prompt;
+                switch (message.feature) {
+                    case "simplify":
+                        prompt = "Please simplify the following text while maintaining its meaning:";
+                        break;
+                    case "summarize":
+                        prompt = "Please provide a concise summary of the following text:";
+                        break;
+                    case "tts":
+                        prompt = "Please convert this text to a more speech-friendly format:";
+                        break;
+                }
+
+                try {
+                    const generatedContent = await generateContent(prompt, message.text);
+                    return chrome.runtime.sendMessage({
+                        target: "sidepanel",
+                        feature: message.feature,
+                        text: message.text,
+                        response: generatedContent
+                    });
+                } catch (error) {
+                    console.error("API Error:", error);
+                    return chrome.runtime.sendMessage({
+                        target: "sidepanel",
+                        feature: message.feature,
+                        text: message.text,
+                        error: "Failed to generate content. Please try again."
+                    });
+                }
             })
             .then(() => {
                 console.log("Message sent to side panel");
@@ -54,5 +81,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.error("Error:", error);
             });
     }
-    return true; // Keep the message channel open for async responses
+    return true;
 });
