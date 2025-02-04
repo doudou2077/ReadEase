@@ -23,7 +23,8 @@ body {
   }
   
   .message {
-    margin: 8px 0;
+    position: relative;
+    margin: 8px 0 32px 0;
     padding: 12px 16px;
     border-radius: 12px;
     font-size: 16px;
@@ -33,7 +34,41 @@ body {
     word-wrap: break-word;
     white-space: pre-wrap; /* Preserve line breaks */
   }
+  .action-button {
+    position: absolute;
+    bottom: -24px;
+    left: 8px;
+    padding: 4px 8px;  /* Added horizontal padding */
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;  /* Add space between icon and text */
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
   
+
+/* Show button on hover for non-latest messages */
+.assistant-message:not(.latest):hover .action-button {
+  opacity: 0.7;
+}
+
+/* Always show button for latest message */
+.assistant-message.latest .action-button {
+  opacity: 0.7;
+}
+  
+  .action-button:hover {
+    opacity: 1 !important;
+  }
+  .action-button .material-icons {
+    font-size: 16px;
+    color: #666;
+  }
   .user-message {
     background-color: #007AFF;
     color: white;
