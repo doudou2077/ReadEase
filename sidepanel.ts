@@ -63,6 +63,20 @@ const addMessage = (content: string, isUser: boolean) => {
     simplifyButton.className = 'action-button';
     simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Simpler';
     simplifyButton.title = 'Simplify';
+    
+    // Add click handler for simplify button
+    simplifyButton.addEventListener('click', async () => {
+      chrome.runtime.sendMessage({
+        action: "simplifyText",
+        text: textDiv.textContent || ""
+      }, (response) => {
+        if (response && response.simplifiedText) {
+          textDiv.textContent = response.simplifiedText;
+          saveChatHistory();
+        }
+      });
+    });
+    
     messageDiv.appendChild(simplifyButton);
   }
 
