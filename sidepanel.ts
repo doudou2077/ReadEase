@@ -1,3 +1,4 @@
+export {}; 
 /// <reference types="chrome" />
 
 // Notify background script that sidepanel is ready
@@ -32,6 +33,12 @@ const loadChatHistory = () => {
   const history = localStorage.getItem('chatHistory');
   if (history) {
     chatContainer.innerHTML = history;
+    // Add 'latest' class to the last assistant message
+    const messages = chatContainer.querySelectorAll('.assistant-message');
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      lastMessage.classList.add('latest');
+    }
   }
 };
 
@@ -44,7 +51,44 @@ const saveChatHistory = () => {
 const addMessage = (content: string, isUser: boolean) => {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
-  messageDiv.textContent = content;
+  
+  // Create text container
+  const textDiv = document.createElement('div');
+  textDiv.textContent = content;
+  messageDiv.appendChild(textDiv);
+
+  // Add simplify button only for assistant messages
+  if (!isUser) {
+    const simplifyButton = document.createElement('button');
+    simplifyButton.className = 'action-button';
+    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Simpler';
+    simplifyButton.title = 'Simplify';
+    
+    // Add click handler for simplify button
+    simplifyButton.addEventListener('click', async () => {
+      chrome.runtime.sendMessage({
+        action: "simplifyText",
+        text: textDiv.textContent || ""
+      }, (response) => {
+        if (response && response.simplifiedText) {
+          textDiv.textContent = response.simplifiedText;
+          saveChatHistory();
+        }
+      });
+    });
+    
+    messageDiv.appendChild(simplifyButton);
+  }
+
+  // Remove 'latest' class from previous message
+  const previousLatest = chatContainer.querySelector('.latest');
+  if (previousLatest) {
+    previousLatest.classList.remove('latest');
+  }
+
+  // Add latest class to new message
+  messageDiv.classList.add('latest');
+
   chatContainer.appendChild(messageDiv);
   chatContainer.scrollTop = chatContainer.scrollHeight;
   saveChatHistory();

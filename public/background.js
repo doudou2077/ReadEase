@@ -20,11 +20,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sidePanelReady = true;
         return;
     }
-});
+    if (message.action === "simplifyText") {
+        const prompt = "Please simplify the following text further while maintaining its core meaning. Make it even simpler than before:";
+        
+        generateContent(prompt, message.text)
+            .then(simplifiedText => {
+                sendResponse({ simplifiedText });
+            })
+            .catch(error => {
+                console.error("API Error:", error);
+                sendResponse({ error: "Failed to simplify text" });
+            });
+        
+        return true; // Required for async response
+    }
 
-
-// message listener for content script messages
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Background received text:", message.text);
     console.log("Background script received message:", message);
     if (message.action === "openSidePanel") {
