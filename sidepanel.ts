@@ -125,3 +125,80 @@ messageInput.addEventListener('input', () => {
 
 // Load chat history on startup
 loadChatHistory();
+
+//joy
+// Create header with settings button
+const header = document.createElement('div');
+header.style.display = 'flex';
+header.style.justifyContent = 'space-between';
+header.style.alignItems = 'center';
+header.style.padding = '10px';
+header.style.backgroundColor = '#f7f7f8';
+header.style.borderBottom = '1px solid #ccc';
+
+// Create settings button
+const settingsButton = document.createElement('button');
+settingsButton.textContent = '⚙️'; // Settings icon 
+settingsButton.style.cursor = 'pointer';
+settingsButton.style.border = 'none';
+settingsButton.style.background = 'none';
+settingsButton.style.fontSize = '20px';
+
+// Add click handler for settings button
+settingsButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    createSettingsModal(); // Show the settings modal
+});
+
+// Append settings button to header
+header.appendChild(settingsButton);
+
+// Append header to the chat container
+chatContainer.prepend(header);
+
+// Function to create settings modal
+const createSettingsModal = () => {
+    // Remove existing settings modal if it exists
+    const existingSettingsModal = document.getElementById("settings-modal");
+    if (existingSettingsModal) existingSettingsModal.remove();
+
+    // Create a modal window
+    const modal = document.createElement("div");
+    modal.id = "settings-modal";
+    modal.style.position = "fixed";
+    modal.style.left = "50%";
+    modal.style.top = "50%";
+    modal.style.transform = "translate(-50%, -50%)";
+    modal.style.backgroundColor = "white";
+    modal.style.border = "1px solid #ccc";
+    modal.style.padding = "20px";
+    modal.style.zIndex = "10000";
+    modal.style.width = "300px";
+    modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+
+    // Add content to the modal
+    const title = document.createElement("h3");
+    title.textContent = "Simplification Level";
+    modal.appendChild(title);
+
+    // Create a dropdown for simplification levels
+    const select = document.createElement("select");
+    for (let i = 1; i <= 6; i++) {
+        const option = document.createElement("option");
+        option.value = i.toString();
+        option.textContent = `Level ${i}`;
+        select.appendChild(option);
+    }
+    modal.appendChild(select);
+
+    // Add a close button
+    const closeButton = document.createElement("button");
+    closeButton.textContent = "Close";
+    closeButton.addEventListener("click", () => {
+        modal.remove();
+    });
+    modal.appendChild(closeButton);
+
+    // Append modal to document body
+    document.body.appendChild(modal);
+};
