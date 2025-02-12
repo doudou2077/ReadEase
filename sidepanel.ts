@@ -51,7 +51,8 @@ const saveCurrentSession = () => {
   const sessions = getSavedSessions();
   const currentUrl = window.location.href;
   const sessionId = Date.now().toString();
-  
+  // Check if chatContainer is not empty before saving
+  if (chatContainer.innerHTML.trim() !== '') {
   const newSession: ChatSession = {
     id: sessionId,
     url: currentUrl,
@@ -61,6 +62,7 @@ const saveCurrentSession = () => {
   
   sessions.unshift(newSession);
   localStorage.setItem('chatSessions', JSON.stringify(sessions));
+}
 };
 
 // Function to get saved sessions
@@ -94,6 +96,10 @@ const createHistoryModal = () => {
     `;
     
     item.addEventListener('click', () => {
+      // Save current chat session before loading history
+      if (chatContainer.innerHTML.trim() !== '') {
+        saveCurrentSession();
+      }
       chatContainer.innerHTML = session.messages;
       modal.remove();
     });
