@@ -82,6 +82,49 @@ body {
     margin-right: auto;
     border-bottom-left-radius: 4px;
   }
+  /* Add these styles for the header buttons */
+.header-button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 20px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.header-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+/* Style for the history modal */
+.history-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 20px;
+  z-index: 10000;
+  width: 80%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+}
+
+.chat-history-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.chat-history-item:hover {
+  background-color: #f5f5f5;
+}
   
   #input-container {
     height: 100px;
