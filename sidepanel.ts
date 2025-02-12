@@ -127,18 +127,20 @@ messageInput.addEventListener('input', () => {
 loadChatHistory();
 
 //joy
-// Create header with settings button
+// Create a fixed header
 const header = document.createElement('div');
-header.style.display = 'flex';
-header.style.justifyContent = 'space-between';
-header.style.alignItems = 'center';
+header.style.position = 'fixed';
+header.style.top = '0';
+header.style.left = '0';
+header.style.right = '0';
 header.style.padding = '10px';
 header.style.backgroundColor = '#f7f7f8';
 header.style.borderBottom = '1px solid #ccc';
+header.style.zIndex = '1000'; // Ensure it stays above other content
 
 // Create settings button
 const settingsButton = document.createElement('button');
-settingsButton.textContent = '⚙️'; // Settings icon 
+settingsButton.textContent = '⚙️ Settings'; 
 settingsButton.style.cursor = 'pointer';
 settingsButton.style.border = 'none';
 settingsButton.style.background = 'none';
@@ -153,8 +155,11 @@ settingsButton.addEventListener('click', (e) => {
 // Append settings button to header
 header.appendChild(settingsButton);
 
-// Append header to the chat container
-chatContainer.prepend(header);
+// Append header to the document body
+document.body.appendChild(header);
+
+// Adjust chat container to account for the fixed header
+chatContainer.style.paddingTop = '50px'; // Adjust based on header height
 
 // Function to create settings modal
 const createSettingsModal = () => {
@@ -167,13 +172,14 @@ const createSettingsModal = () => {
     modal.id = "settings-modal";
     modal.style.position = "fixed";
     modal.style.left = "50%";
-    modal.style.top = "50%";
+    modal.style.top = "12%";
     modal.style.transform = "translate(-50%, -50%)";
     modal.style.backgroundColor = "white";
     modal.style.border = "1px solid #ccc";
     modal.style.padding = "20px";
     modal.style.zIndex = "10000";
-    modal.style.width = "300px";
+    modal.style.width = "200px";
+    modal.style.height = "80px";
     modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
 
     // Add content to the modal
@@ -191,13 +197,20 @@ const createSettingsModal = () => {
     }
     modal.appendChild(select);
 
-    // Add a close button
-    const closeButton = document.createElement("button");
-    closeButton.textContent = "Close";
-    closeButton.addEventListener("click", () => {
+    // Add a confirm button
+    const confirmButton = document.createElement("button");
+    confirmButton.textContent = "Confirm";
+    confirmButton.style.marginLeft = "20px";
+    confirmButton.style.backgroundColor = "#007AFF"; // Match with send button color
+    confirmButton.style.color = "white"; // Set text color to white
+    confirmButton.style.border = "none"; // Remove border
+    confirmButton.style.borderRadius = "6px"; // Add border radius for rounded corners
+    confirmButton.style.padding = "5px 5px"; // Add padding for better appearance
+    confirmButton.style.cursor = "pointer"; // Change cursor to pointer
+    confirmButton.addEventListener("click", () => {
         modal.remove();
     });
-    modal.appendChild(closeButton);
+    modal.appendChild(confirmButton);
 
     // Append modal to document body
     document.body.appendChild(modal);
