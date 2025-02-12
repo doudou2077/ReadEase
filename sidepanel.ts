@@ -161,6 +161,8 @@ document.body.appendChild(header);
 // Adjust chat container to account for the fixed header
 chatContainer.style.paddingTop = '50px'; // Adjust based on header height
 
+let currentLevel = "Level 3"; // Variable to store the current level
+
 // Function to create settings modal
 const createSettingsModal = () => {
     // Remove existing settings modal if it exists
@@ -172,20 +174,26 @@ const createSettingsModal = () => {
     modal.id = "settings-modal";
     modal.style.position = "fixed";
     modal.style.left = "50%";
-    modal.style.top = "12%";
+    modal.style.top = "15%";
     modal.style.transform = "translate(-50%, -50%)";
     modal.style.backgroundColor = "white";
     modal.style.border = "1px solid #ccc";
     modal.style.padding = "20px";
     modal.style.zIndex = "10000";
     modal.style.width = "200px";
-    modal.style.height = "80px";
+    modal.style.height = "120px";
     modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
 
     // Add content to the modal
     const title = document.createElement("h3");
     title.textContent = "Simplification Level";
     modal.appendChild(title);
+
+    // Create a display element for the current level
+    const currentLevelDisplay = document.createElement("div");
+    currentLevelDisplay.textContent = `Current Level: ${currentLevel}`; // Show the latest set level
+    currentLevelDisplay.style.marginBottom = "10px"; // Add margin below the display
+    modal.appendChild(currentLevelDisplay);
 
     // Create a dropdown for simplification levels
     const select = document.createElement("select");
@@ -197,6 +205,9 @@ const createSettingsModal = () => {
     }
     modal.appendChild(select);
 
+    // Set the dropdown to the current level
+    select.value = currentLevel.split(" ")[1];
+    
     // Add a confirm button
     const confirmButton = document.createElement("button");
     confirmButton.textContent = "Confirm";
@@ -207,8 +218,11 @@ const createSettingsModal = () => {
     confirmButton.style.borderRadius = "6px"; // Add border radius for rounded corners
     confirmButton.style.padding = "5px 5px"; // Add padding for better appearance
     confirmButton.style.cursor = "pointer"; // Change cursor to pointer
+    // Update the current level and display when the confirm button is clicked
     confirmButton.addEventListener("click", () => {
-        modal.remove();
+      currentLevel = `Level ${select.value}`; // Update the current level
+      currentLevelDisplay.textContent = `Current Level: ${currentLevel}`; // Update display
+      modal.remove(); // Close the modal
     });
     modal.appendChild(confirmButton);
 
