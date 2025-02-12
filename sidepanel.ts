@@ -88,18 +88,28 @@ const createHistoryModal = () => {
     const item = document.createElement('div');
     item.className = 'chat-history-item';
     const date = new Date(session.timestamp);
+    // Get the first message from the session
+    const firstMessage = session.messages.split('<div>')[1]; // Assuming messages are wrapped in <div>
+    const firstMessageText = firstMessage ? firstMessage.replace(/<\/div>.*/, '') : ''; // Extract text and remove HTML tags
+
+    // Get the first 5 words and append "..."
+    const titleText = firstMessageText.split(' ').slice(0, 5).join(' ') + (firstMessageText.split(' ').length > 5 ? '...' : '');
+
     item.innerHTML = `
-      <div>${new URL(session.url).hostname}</div>
+      <div>${titleText}</div> <!-- Use first 5 words of the first message as title -->
       <div style="font-size: 0.8em; color: #666;">
         ${date.toLocaleDateString()} ${date.toLocaleTimeString()}
       </div>
     `;
     
     item.addEventListener('click', () => {
-      // Save current chat session before loading history
-      if (chatContainer.innerHTML.trim() !== '') {
-        saveCurrentSession();
-      }
+      // // Save current chat session before loading history
+      // if (chatContainer.innerHTML.trim() !== '') {
+      //   const currentMessages = chatContainer.innerHTML;
+      //   if (currentMessages !== session.messages) {
+      //     saveCurrentSession();
+      //   }
+      // }
       chatContainer.innerHTML = session.messages;
       modal.remove();
     });
