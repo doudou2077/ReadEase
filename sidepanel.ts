@@ -7,6 +7,25 @@ chrome.runtime.sendMessage({ action: "sidepanel_ready" });
 const chatContainer = document.getElementById('chat-container') as HTMLDivElement;
 const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
 const sendButton = document.getElementById('send-button') as HTMLButtonElement;
+const header = document.createElement('div');
+header.style.position = 'fixed';
+header.style.top = '0';
+header.style.left = '0';
+header.style.right = '0';
+header.style.padding = '10px';
+header.style.backgroundColor = '#f7f7f8';
+header.style.borderBottom = '1px solid #ccc';
+header.style.zIndex = '1000'; // Ensure it stays above other content
+header.style.display = 'flex'; // Use flexbox for layout
+header.style.gap = '10px'; // Optional: add space between buttons
+
+// Create settings button
+const settingsButton = document.createElement('button');
+settingsButton.innerHTML = '<span class="material-icons">settings</span>'; // Only icon
+settingsButton.style.cursor = 'pointer';
+settingsButton.style.border = 'none';
+settingsButton.style.background = 'none';
+settingsButton.style.fontSize = '20px';
 
 interface Message {
   target: string;
@@ -15,6 +34,141 @@ interface Message {
   response?: string;
   error?: string;
 }
+interface ChatSession {
+  id: string;
+  url: string;
+  timestamp: number;
+  messages: string; // HTML content of messages
+}
+// Add history button to header
+const historyButton = document.createElement('button');
+historyButton.className = 'header-button';
+historyButton.innerHTML = '<span class="material-icons">history</span>';
+header.appendChild(historyButton);
+
+// Function to save current chat session
+const saveCurrentSession = () => {
+  const sessions = getSavedSessions();
+  const currentUrl = window.location.href;
+  const sessionId = Date.now().toString();
+  // Check if chatContainer is not empty before saving
+  if (chatContainer.innerHTML.trim() !== '') {
+  const newSession: ChatSession = {
+    id: sessionId,
+    url: currentUrl,
+    timestamp: Date.now(),
+    messages: chatContainer.innerHTML
+  };
+  
+  sessions.unshift(newSession);
+  localStorage.setItem('chatSessions', JSON.stringify(sessions));
+}
+};
+
+// Function to get saved sessions
+const getSavedSessions = (): ChatSession[] => {
+  const sessions = localStorage.getItem('chatSessions');
+  return sessions ? JSON.parse(sessions) : [];
+};
+
+// Function to create history modal
+const createHistoryModal = () => {
+  const existingModal = document.querySelector('.history-modal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'history-modal';
+
+  const title = document.createElement('h2');
+  title.textContent = 'Chat History';
+  modal.appendChild(title);
+
+  const sessions = getSavedSessions();
+  sessions.forEach(session => {
+    const item = document.createElement('div');
+    item.className = 'chat-history-item';
+    const date = new Date(session.timestamp);
+    // Get the first message from the session
+    const firstMessage = session.messages.split('<div>')[1]; // Assuming messages are wrapped in <div>
+    const firstMessageText = firstMessage ? firstMessage.replace(/<\/div>.*/, '') : ''; // Extract text and remove HTML tags
+
+    // Get the first 5 words and append "..."
+    const titleText = firstMessageText.split(' ').slice(0, 5).join(' ') + (firstMessageText.split(' ').length > 5 ? '...' : '');
+
+    item.innerHTML = `
+      <div>${titleText}</div> <!-- Use first 5 words of the first message as title -->
+      <div style="font-size: 0.8em; color: #666;">
+        ${date.toLocaleDateString()} ${date.toLocaleTimeString()}
+      </div>
+    `;
+    
+    item.addEventListener('click', () => {
+      // // Save current chat session before loading history
+      // if (chatContainer.innerHTML.trim() !== '') {
+      //   const currentMessages = chatContainer.innerHTML;
+      //   if (currentMessages !== session.messages) {
+      //     saveCurrentSession();
+      //   }
+      // }
+      chatContainer.innerHTML = session.messages;
+      modal.remove();
+    });
+    
+    modal.appendChild(item);
+  });
+
+  document.body.appendChild(modal);
+
+  // Close modal when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!modal.contains(e.target as Node) && e.target !== historyButton) {
+      modal.remove();
+    }
+  });
+};
+
+// Add click handler for history button
+historyButton.addEventListener('click', (e) => {
+  e.stopPropagation();
+  createHistoryModal();
+});
+
+// Start new chat session when page loads
+const startNewSession = () => {
+  saveCurrentSession();
+  chatContainer.innerHTML = ``;
+};
+
+// Listen for tab URL changes
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    startNewSession();
+  }
+});
+// Add new chat button to header
+const newChatButton = document.createElement('button');
+newChatButton.className = 'header-button';
+newChatButton.innerHTML = '<span class="material-icons">add</span>';
+header.appendChild(newChatButton);
+
+// Handle new chat button click
+newChatButton.addEventListener('click', () => {
+  // Save current chat to history before starting new one
+  if (chatContainer.innerHTML.trim()) {
+    saveCurrentSession();
+  }
+  
+  // Start fresh chat
+  chatContainer.innerHTML = ``;
+});
+
+// Remove the automatic saving from tab updates
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    // Only clear the chat, don't save
+    chatContainer.innerHTML = ``;
+  }
+});
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message: Message) => {
@@ -45,8 +199,9 @@ const loadChatHistory = () => {
 // Save chat history to localStorage
 const saveChatHistory = () => {
   localStorage.setItem('chatHistory', chatContainer.innerHTML);
+  // saveCurrentSession(); // Also save to sessions history
 };
-
+// simpler
 // Add a new message to the chat
 const addMessage = (content: string, isUser: boolean) => {
   const messageDiv = document.createElement('div');
@@ -61,7 +216,7 @@ const addMessage = (content: string, isUser: boolean) => {
   if (!isUser) {
     const simplifyButton = document.createElement('button');
     simplifyButton.className = 'action-button';
-    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Simpler';
+    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Say it differently';
     simplifyButton.title = 'Simplify';
     
     // Add click handler for simplify button
@@ -128,23 +283,6 @@ loadChatHistory();
 
 //joy
 // Create a fixed header
-const header = document.createElement('div');
-header.style.position = 'fixed';
-header.style.top = '0';
-header.style.left = '0';
-header.style.right = '0';
-header.style.padding = '10px';
-header.style.backgroundColor = '#f7f7f8';
-header.style.borderBottom = '1px solid #ccc';
-header.style.zIndex = '1000'; // Ensure it stays above other content
-
-// Create settings button
-const settingsButton = document.createElement('button');
-settingsButton.textContent = '⚙️ Settings'; 
-settingsButton.style.cursor = 'pointer';
-settingsButton.style.border = 'none';
-settingsButton.style.background = 'none';
-settingsButton.style.fontSize = '20px';
 
 // Add click handler for settings button
 settingsButton.addEventListener('click', (e) => {

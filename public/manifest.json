@@ -10,7 +10,8 @@
         "activeTab",
         "scripting",
         "sidePanel",
-        "storage"
+        "storage",
+        "tabs"
     ],
     "side_panel": {
         "default_path": "sidepanel.html"
