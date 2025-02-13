@@ -201,7 +201,7 @@ const saveChatHistory = () => {
   localStorage.setItem('chatHistory', chatContainer.innerHTML);
   // saveCurrentSession(); // Also save to sessions history
 };
-
+// simpler
 // Add a new message to the chat
 const addMessage = (content: string, isUser: boolean) => {
   const messageDiv = document.createElement('div');
@@ -216,7 +216,7 @@ const addMessage = (content: string, isUser: boolean) => {
   if (!isUser) {
     const simplifyButton = document.createElement('button');
     simplifyButton.className = 'action-button';
-    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Simpler';
+    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span> Say it differently';
     simplifyButton.title = 'Simplify';
     
     // Add click handler for simplify button
