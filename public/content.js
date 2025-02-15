@@ -2,14 +2,13 @@ import textReadability from 'text-readability';
 
 console.log("Content script loaded");
 
-// Determine the grade level of the selected sentence
 function getReadingLevelDescription(gradeLevel) {
-  if (gradeLevel < 0) return "Below Kindergarten";
-  if (gradeLevel <= 5) return "Elementary School";
-  if (gradeLevel <= 8) return "Middle School";
-  if (gradeLevel <= 12) return "High School";
-  if (gradeLevel <= 16) return "College";
-  return "College Graduate";
+  if (gradeLevel < 0) return "Below Kindergarten (K)";
+  if (gradeLevel <= 5) return "Elementary (1-5)";
+  if (gradeLevel <= 8) return "Middle School (6-8)";
+  if (gradeLevel <= 12) return "High School (9-12)";
+  if (gradeLevel <= 16) return "College (13-16)";
+  return "College Graduate (17+)";
 }
 
 
@@ -75,6 +74,13 @@ const createModal = (selectedText) => {
       // Calculate readability level
       const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
       const readingLevel = getReadingLevelDescription(gradeLevel);
+
+      // Add check for already simple text
+      if (readingLevel === "Below Kindergarten") {
+        alert("This text is already at the simplest level possible.");
+        modal.remove();
+        return;
+      }
 
       console.log("Text Readability:", {
         text: lastSelectedText,
