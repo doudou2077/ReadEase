@@ -1,4 +1,16 @@
+import textReadability from 'text-readability';
+
 console.log("Content script loaded");
+
+function getReadingLevelDescription(gradeLevel) {
+  if (gradeLevel < 0) return "Below Kindergarten (K)";
+  if (gradeLevel <= 5) return "Elementary (1-5)";
+  if (gradeLevel <= 8) return "Middle School (6-8)";
+  if (gradeLevel <= 12) return "High School (9-12)";
+  if (gradeLevel <= 16) return "College (13-16)";
+  return "College Graduate (17+)";
+}
+
 
 // Variable to store the selected text
 let lastSelectedText = '';
@@ -59,11 +71,32 @@ const createModal = (selectedText) => {
   // Add event listeners for buttons
   simplifyButton.addEventListener("click", () => {
     if (isTextCurrentlySelected()) {
+      // Calculate readability level
+      const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
+      const readingLevel = getReadingLevelDescription(gradeLevel);
+
+      // Add check for already simple text
+      if (readingLevel === "Below Kindergarten") {
+        alert("This text is already at the simplest level possible.");
+        modal.remove();
+        return;
+      }
+
+      console.log("Text Readability:", {
+        text: lastSelectedText,
+        gradeLevel: gradeLevel,
+        readingLevel: readingLevel
+      });
+
       console.log("Sending text to background:", lastSelectedText);
       chrome.runtime.sendMessage({
         action: "openSidePanel",
         feature: "simplify",
-        text: lastSelectedText
+        text: lastSelectedText,
+        readability: {
+          gradeLevel: gradeLevel,
+          readingLevel: readingLevel
+        }
       }, (response) => {
         if (chrome.runtime.lastError) {
           console.error("Runtime error:", chrome.runtime.lastError);
@@ -165,8 +198,23 @@ function createHoverIcon() {
     console.log("Hover icon clicked, last selected text:", lastSelectedText);
 
     if (lastSelectedText && lastSelectedText.length > 0) {
+      // Calculate readability when text is selected
+      const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
+      const readingLevel = getReadingLevelDescription(gradeLevel);
+      console.log("Text Readability:", {
+        text: lastSelectedText,
+        gradeLevel: gradeLevel,
+        readingLevel: readingLevel
+      });
+
       console.log("Creating modal with text:", lastSelectedText);
-      chrome.storage.local.set({ selectedText: lastSelectedText }, () => {
+      chrome.storage.local.set({
+        selectedText: lastSelectedText,
+        readability: {
+          gradeLevel: gradeLevel,
+          readingLevel: readingLevel
+        }
+      }, () => {
         console.log("Text stored in local storage");
         if (chrome.runtime.lastError) {
           console.error("Storage error:", chrome.runtime.lastError);
