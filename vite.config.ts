@@ -1,15 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
     rollupOptions: {
       input: {
-        main: 'index.html',
-        sidepanel: 'sidepanel.html'
+        sidepanel: 'sidepanel.html',
+        content: 'public/content.js',
+        background: 'public/background.js'
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          // Output content.js as content.mjs
+          if (chunkInfo.name === 'content') {
+            return 'content.mjs';
+          }
+          return '[name].js';
+        },
+        format: 'es',
+        dir: 'dist'
       }
     }
   }

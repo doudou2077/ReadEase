@@ -7,7 +7,7 @@ export default {
     moduleFileExtensions: ['js', 'json'],
     testMatch: ['**/public/**/*test.js', '**/public/**/*spec.js'],
     transformIgnorePatterns: [
-        'node_modules/(?!(jest-fetch-mock)/)'
+        'node_modules/(?!(jest-fetch-mock|text-readability)/)'
     ],
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1'
