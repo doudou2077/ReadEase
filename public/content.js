@@ -2,7 +2,7 @@ import textReadability from 'text-readability';
 
 console.log("Content script loaded");
 
-function getReadingLevelDescription(gradeLevel) {
+export function getReadingLevelDescription(gradeLevel) {
   if (gradeLevel < 0) return "Below Kindergarten (K)";
   if (gradeLevel <= 5) return "Elementary (1-5)";
   if (gradeLevel <= 8) return "Middle School (6-8)";
