@@ -1,5 +1,5 @@
-import fetchMock from 'jest-fetch-mock';
-import { generateContent } from './api';
+const fetchMock = require('jest-fetch-mock');
+const { generateContent } = require('./api');
 
 // Enable fetch mocks before each test
 beforeEach(() => {
@@ -25,9 +25,9 @@ describe('API Status Test', () => {
 
         const prompt = "Test prompt";
         const text = "Test text";
-        
+
         const result = await generateContent(prompt, text);
-        
+
         expect(result).toBe("Generated content");
     });
 });
