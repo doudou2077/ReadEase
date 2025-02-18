@@ -293,7 +293,7 @@ document.body.appendChild(header);
 // Adjust chat container to account for the fixed header
 chatContainer.style.paddingTop = '50px'; // Adjust based on header height
 
-let currentLevel = "Level 3"; // Variable to store the current level
+let currentLevel = ""; // Variable to store the current level
 
 // Function to create settings modal
 const createSettingsModal = () => {
@@ -312,7 +312,7 @@ const createSettingsModal = () => {
     modal.style.border = "1px solid #ccc";
     modal.style.padding = "20px";
     modal.style.zIndex = "10000";
-    modal.style.width = "200px";
+    modal.style.width = "230px";
     modal.style.height = "120px";
     modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
 
@@ -329,13 +329,18 @@ const createSettingsModal = () => {
 
     // Create a dropdown for simplification levels
     const select = document.createElement("select");
-    for (let i = 1; i <= 6; i++) {
+    const levels = ["Most Difficult", "Difficult", "Medium", "Easy", "Easiest"];
+    for (let i = 0; i < levels.length; i++) {
         const option = document.createElement("option");
-        option.value = i.toString();
-        option.textContent = `Level ${i}`;
+        option.value = (i + 1).toString(); // Set value from 1 to 5
+        option.textContent = levels[i]; // Set text to the corresponding level
         select.appendChild(option);
     }
     modal.appendChild(select);
+
+    // Add styles to align dropdown and button
+    select.style.display = "inline-block"; // Make dropdown inline
+    select.style.marginRight = "10px"; // Add some space between dropdown and button
 
     // Set the dropdown to the current level
     select.value = currentLevel.split(" ")[1];
@@ -343,7 +348,7 @@ const createSettingsModal = () => {
     // Add a confirm button
     const confirmButton = document.createElement("button");
     confirmButton.textContent = "Confirm";
-    confirmButton.style.marginLeft = "20px";
+    confirmButton.style.marginLeft = "10px";
     confirmButton.style.backgroundColor = "#007AFF"; // Match with send button color
     confirmButton.style.color = "white"; // Set text color to white
     confirmButton.style.border = "none"; // Remove border
