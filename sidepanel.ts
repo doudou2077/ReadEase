@@ -350,8 +350,13 @@ const createSettingsModal = () => {
 
     // Retrieve simplificationLevel from local storage
     chrome.storage.local.get(['simplificationLevel'], (result) => {
-      const simplificationLevel = result.simplificationLevel || 1; // Default to 1 if not set
-      select.value = simplificationLevel.toString(); // Set the dropdown to the current level
+      const simplificationLevel = result.simplificationLevel || null; // Default to null if not set
+      if (simplificationLevel === null) {
+          // Set the dropdown to blank if simplificationLevel is null
+          select.value = ""; // Set to empty string for blank
+      } else {
+          select.value = simplificationLevel.toString(); // Set the dropdown to the current level
+      }
     });
     
     // Add a confirm button
