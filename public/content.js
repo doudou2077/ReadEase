@@ -222,27 +222,16 @@ const createFloatingButton = () => {
 // Create the floating button
 const floatingButton = createFloatingButton();
 
-// Update the position of the floating button based on text selection
-const updateFloatingButtonPosition = () => {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    floatingButton.style.left = `${rect.right + 10}px`; // Offset to the right
-    floatingButton.style.top = `${rect.top}px`; // Align with the top of the selection
-    floatingButton.style.display = "block"; // Show the button
-  } else {
-    floatingButton.style.display = "none"; // Hide the button if no text is selected
-  }
-};
-
 // Show the button when the mouse is released after selecting text
-document.addEventListener('mouseup', () => {
+document.addEventListener('mouseup', (event) => {
   const selection = window.getSelection();
   const newText = selection ? selection.toString().trim() : '';
   lastSelectedText = newText; // Update lastSelectedText even if empty
   if (newText) {
-    updateFloatingButtonPosition(); // Update position if text is selected
+    // Position the button at the mouse release location
+    floatingButton.style.left = `${event.pageX + 10}px`; // Offset to the right
+    floatingButton.style.top = `${event.pageY + 10}px`; // offset to the bottom
+    floatingButton.style.display = "block"; // Show the button
   } else {
     floatingButton.style.display = "none"; // Hide the button if no text is selected
   }
