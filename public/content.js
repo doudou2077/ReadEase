@@ -236,17 +236,8 @@ const updateFloatingButtonPosition = () => {
   }
 };
 
-// Update the position of the floating button based on mouse movement
-document.addEventListener('mousemove', () => {
-  if (isTextCurrentlySelected()) {
-    updateFloatingButtonPosition();
-  } else {
-    floatingButton.style.display = "none"; // Hide the button if no text is selected
-  }
-});
-
-// Add a selection change listener to update the button position
-document.addEventListener('selectionchange', () => {
+// Show the button when the mouse is released after selecting text
+document.addEventListener('mouseup', () => {
   const selection = window.getSelection();
   const newText = selection ? selection.toString().trim() : '';
   lastSelectedText = newText; // Update lastSelectedText even if empty
@@ -256,6 +247,18 @@ document.addEventListener('selectionchange', () => {
     floatingButton.style.display = "none"; // Hide the button if no text is selected
   }
 });
+
+// Hide the button when clicking outside
+document.addEventListener('click', (event) => {
+  const selection = window.getSelection();
+  if (!selection.toString().trim()) {
+    floatingButton.style.display = "none"; // Hide the button if no text is selected
+  }
+});
+
+
+
+
 // Function to create and initialize hover icon
 function createHoverIcon() {
   // Remove existing hover icon and modal if they exist
