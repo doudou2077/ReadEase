@@ -157,7 +157,105 @@ const createModal = (selectedText) => {
 
   return modal;
 };
+// Function to create a floating button
+const createFloatingButton = () => {
+  const button = document.createElement("button");
+  button.textContent = "Simplify";
+  button.style.position = "fixed";
+  button.style.backgroundColor = "#ca80e8";
+  button.style.color = "white";
+  button.style.border = "none";
+  button.style.borderRadius = "5px";
+  button.style.padding = "10px";
+  button.style.zIndex = "10000";
+  button.style.cursor = "pointer";
+  button.style.display = "none"; // Initially hidden
 
+  // Add click event listener to the button
+  button.addEventListener("click", () => {
+    if (isTextCurrentlySelected()) {
+      // Calculate readability level
+      const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
+      const readingLevel = getReadingLevelDescription(gradeLevel);
+
+      // Add check for already simple text
+      if (readingLevel === "Below Kindergarten") {
+        alert("This text is already at the simplest level possible.");
+
+        return;
+      }
+
+      console.log("Text Readability:", {
+        text: lastSelectedText,
+        gradeLevel: gradeLevel,
+        readingLevel: readingLevel
+      });
+
+      console.log("Sending text to background:", lastSelectedText);
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "simplify",
+        text: lastSelectedText,
+        readability: {
+          gradeLevel: gradeLevel,
+          readingLevel: readingLevel
+        }
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Runtime error:", chrome.runtime.lastError);
+        } else {
+          console.log("Message sent successfully");
+
+        }
+      });
+    } else {
+      console.log("No text currently selected");
+      alert("Please select some text first.");
+
+    }
+  });
+
+  document.body.appendChild(button);
+  return button;
+};
+
+// Create the floating button
+const floatingButton = createFloatingButton();
+
+// Update the position of the floating button based on text selection
+const updateFloatingButtonPosition = () => {
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    floatingButton.style.left = `${rect.right + 10}px`; // Offset to the right
+    floatingButton.style.top = `${rect.top}px`; // Align with the top of the selection
+    floatingButton.style.display = "block"; // Show the button
+  } else {
+    floatingButton.style.display = "none"; // Hide the button if no text is selected
+  }
+};
+
+// Update the position of the floating button based on mouse movement
+document.addEventListener('mousemove', () => {
+  if (isTextCurrentlySelected()) {
+    updateFloatingButtonPosition();
+  } else {
+    floatingButton.style.display = "none"; // Hide the button if no text is selected
+  }
+});
+
+// Add a selection change listener to update the button position
+document.addEventListener('selectionchange', () => {
+  const selection = window.getSelection();
+  const newText = selection ? selection.toString().trim() : '';
+  lastSelectedText = newText; // Update lastSelectedText even if empty
+  if (newText) {
+    updateFloatingButtonPosition(); // Update position if text is selected
+  } else {
+    floatingButton.style.display = "none"; // Hide the button if no text is selected
+  }
+});
 // Function to create and initialize hover icon
 function createHoverIcon() {
   // Remove existing hover icon and modal if they exist
