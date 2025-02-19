@@ -148,10 +148,6 @@ const addMessage = (
       simplifyButton.style.backgroundColor = '#cccccc';
     } else {
       simplifyButton.title = 'Say it differently';
-
-
-
-
       // Add click handler for simplify button
       simplifyButton.addEventListener('click', () => {
         console.log("=== Simplify Button Click Debug ===");
@@ -165,7 +161,7 @@ const addMessage = (
 
         // Send to background.js for API call 
         chrome.runtime.sendMessage({
-          action: "simplifyText",
+          action: "simplifyFurther",
           text: textContent,
           currentLevel: currentLevel as GradeLevel
         }, (response) => {
