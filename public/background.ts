@@ -1,6 +1,13 @@
 import { generateContent } from './api.js';
 import { GRADE_LEVELS, SIMPLIFICATION_PROMPTS } from './gradeConfig.js';
 
+// Function to update simplification level
+const updateSimplificationLevel = (level: number) => {
+    chrome.storage.local.set({ simplificationLevel: level }, () => {
+        console.log('Simplification level set to:', level);
+    });
+}
+
 chrome.action.onClicked.addListener((tab) => {
     if (tab.id !== undefined && !tab.url.startsWith("chrome://")) {
         chrome.scripting.executeScript({
@@ -145,6 +152,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 // Use the prompt to simplify the text
                                 prompt = promptTemplate.replace('{{text}}', message.text);
                                 console.log("Using prompt:", prompt);
+                                //update simplication level to the reading level of the original text
+                                switch(simplificationLevel) {
+                                    case 'College Graduate (17+)':
+                                        updateSimplificationLevel(1)
+                                        break
+                                    case 'College (13-16)':
+                                        updateSimplificationLevel(2)
+                                        break
+                                    case 'High School (9-12)':
+                                        updateSimplificationLevel(3)
+                                        break
+                                    case 'Middle School (6-8)':
+                                        updateSimplificationLevel(4)
+                                        break
+                                    case 'Elementary (1-5)':
+                                        updateSimplificationLevel(5)
+                                        break
+                                }
+                                
                             } else {
                                 // Handle the case where simplificationLevel is not null
                                 console.log("Simplification level is set:", simplificationLevel);
@@ -228,6 +254,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         prompt = "Please convert this text to a more speech-friendly format:";
                         break;
                 }
-            })
+            });
         }
 })
