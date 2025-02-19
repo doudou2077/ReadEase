@@ -64,61 +64,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         prompt = promptTemplate.replace('{{text}}', message.text);
         console.log("Using prompt:", prompt);
+
+        generateContent(prompt)
+            .then(response => {
+                console.log("=== API Response ===");
+                console.log("Raw response:", response);
+
+                // Parse the response
+                const lines = response.split('\n');
+                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
+                const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
+
+                console.log("Parsed values:", {
+                    simplifiedText: !!simplifiedText,
+                    currentLevel,
+                    remainingLevels
+                });
+
+                if (!simplifiedText || !currentLevel) {
+                    throw new Error('Invalid API response format');
+                }
+
+                console.log("Parsed response:", { simplifiedText, currentLevel, remainingLevels });
+                sendResponse({
+                    simplifiedText,
+                    currentLevel,
+                    remainingLevels
+                });
+            })
+            .catch(error => {
+                console.error("=== Error in SimplifyText ===");
+                console.error("Error details:", error);
+                sendResponse({
+                    error: error.message || "Failed to simplify text"
+                });
+            });
+            return true
     }
-
-    //     generateContent(prompt)
-    //         .then(response => {
-    //             console.log("=== Simplify further API Response ===");
-    //             console.log("Raw response:", response);
-
-    //             // Parse the response
-    //             const lines = response.split('\n');
-    //             const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
-    //             const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
-    //             const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
-
-    //             console.log("Parsed values:", {
-    //                 simplifiedText: !!simplifiedText,
-    //                 currentLevel,
-    //                 remainingLevels
-    //             });
-
-    //             if (!simplifiedText || !currentLevel) {
-    //                 throw new Error('Invalid API response format');
-    //             }
-
-    //             console.log("Parsed response:", { simplifiedText, currentLevel, remainingLevels });
-    //             // sendResponse({
-    //             //     simplifiedText,
-    //             //     currentLevel,
-    //             //     remainingLevels
-    //             // });
-    //             chrome.runtime.sendMessage({
-    //                 target: "sidepanel",
-    //                 feature: message.feature,
-    //                 text: message.text,
-    //                 response: simplifiedText,
-    //                 currentLevel: currentLevel,
-    //                 remainingLevels: remainingLevels,
-    //                 readability: message.readability
-    //             }, (response) => {
-    //                 if (chrome.runtime.lastError) {
-    //                     console.error("Error sending message to side panel:", chrome.runtime.lastError);
-    //                 } else {
-    //                     console.log("Message sent successfully to side panel:", response);
-    //                 }
-    //             })
-    //         })
-    //         .catch(error => {
-    //             console.error("=== Error in simplifyFurther ===");
-    //             console.error("Error details:", error);
-    //             sendResponse({
-    //                 error: error.message || "Failed to simplify text"
-    //             });
-    //         });
-
-            
-    // }
 
     console.log("Background received text:", message.text);
     if (message && message.feature === "simplify") {
@@ -197,7 +180,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         }
                         // Call the function
                         getSimplificationLevelAndPrompt();
-                        return true; // Indicate that the response will be sent asynchronously
+
+                        generateContent(prompt)
+                            .then(response => {
+                                console.log("=== Simplify API Response ===");
+                                console.log("Raw response:", response);
+
+                                // Parse the response
+                                const lines = response.split('\n');
+                                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                                const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
+                                const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
+
+                                console.log("Parsed values:", {
+                                    simplifiedText: !!simplifiedText,
+                                    currentLevel,
+                                    remainingLevels
+                                });
+
+                                if (!simplifiedText || !currentLevel) {
+                                    throw new Error('Invalid API response format');
+                                }
+
+                                console.log("Parsed response:", { simplifiedText, currentLevel, remainingLevels });
+                                chrome.runtime.sendMessage({
+                                    target: "sidepanel",
+                                    feature: message.feature,
+                                    text: message.text,
+                                    response: simplifiedText,
+                                    currentLevel: currentLevel,
+                                    remainingLevels: remainingLevels,
+                                    readability: message.readability
+                                }, (response) => {
+                                    if (chrome.runtime.lastError) {
+                                        console.error("Error sending message to side panel:", chrome.runtime.lastError);
+                                    } else {
+                                        console.log("Message sent successfully to side panel:", response);
+                                    }
+                                })
+                            })
+                    return true
+
                     case "summarize":
                         prompt = "Please provide a concise summary of the following text:";
                         break;
@@ -206,56 +229,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         break;
                 }
             })
-    }
-    generateContent(prompt)
-            .then(response => {
-                console.log("=== Simplify API Response ===");
-                console.log("Raw response:", response);
-
-                // Parse the response
-                const lines = response.split('\n');
-                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
-                const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
-                const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
-
-                console.log("Parsed values:", {
-                    simplifiedText: !!simplifiedText,
-                    currentLevel,
-                    remainingLevels
-                });
-
-                if (!simplifiedText || !currentLevel) {
-                    throw new Error('Invalid API response format');
-                }
-
-                console.log("Parsed response:", { simplifiedText, currentLevel, remainingLevels });
-                chrome.runtime.sendMessage({
-                    target: "sidepanel",
-                    feature: message.feature,
-                    text: message.text,
-                    response: simplifiedText,
-                    currentLevel: currentLevel,
-                    remainingLevels: remainingLevels,
-                    readability: message.readability
-                }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("Error sending message to side panel:", chrome.runtime.lastError);
-                    } else {
-                        console.log("Message sent successfully to side panel:", response);
-                    }
-                })
-            })
-
-        // return chrome.runtime.sendMessage({
-        //     target: "sidepanel",
-        //     feature: message.feature,
-        //     text: message.text,
-        //     response: simplifiedText,
-        //     currentLevel: currentLevel,
-        //     remainingLevels: remainingLevels,
-        //     readability: message.readability
-        // });
-        // Send the message to the side panel
-        
-    return true
+        }
 })
