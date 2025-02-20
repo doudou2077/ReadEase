@@ -1,9 +1,7 @@
 import { GRADE_LEVELS, SIMPLIFICATION_PROMPTS } from './public/gradeConfig.js';
 import type { GradeLevel } from './src/types.js';
 
-
-
-export { };
+// export { };
 /// <reference types="chrome" />
 
 // Notify background script that sidepanel is ready
@@ -25,6 +23,7 @@ interface Message {
   };
   currentLevel?: GradeLevel;
   remainingLevels?: number;
+  type?: string; // Add the 'type' property
 }
 
 // Listen for messages from background script
@@ -35,6 +34,7 @@ chrome.runtime.onMessage.addListener((message: Message) => {
     currentLevel: message.currentLevel,
     remainingLevels: message.remainingLevels
   });
+
   if (message.target === "sidepanel") {
     if (message.error) {
       console.log("Handling error case:", {
@@ -148,10 +148,6 @@ const addMessage = (
       simplifyButton.style.backgroundColor = '#cccccc';
     } else {
       simplifyButton.title = 'Say it differently';
-
-
-
-
       // Add click handler for simplify button
       simplifyButton.addEventListener('click', () => {
         console.log("=== Simplify Button Click Debug ===");
@@ -165,7 +161,7 @@ const addMessage = (
 
         // Send to background.js for API call 
         chrome.runtime.sendMessage({
-          action: "simplifyText",
+          action: "simplifyFurther",
           text: textContent,
           currentLevel: currentLevel as GradeLevel
         }, (response) => {
@@ -293,7 +289,13 @@ document.body.appendChild(header);
 // Adjust chat container to account for the fixed header
 chatContainer.style.paddingTop = '50px'; // Adjust based on header height
 
-let currentLevel = "Level 3"; // Variable to store the current level
+//let currentLevel = ""; // Variable to store the current level
+// Function to update simplification level
+const updateSimplificationLevel = (level: number) => {
+  chrome.storage.local.set({ simplificationLevel: level }, () => {
+      console.log('Simplification level set to:', level);
+  });
+};
 
 // Function to create settings modal
 const createSettingsModal = () => {
@@ -312,7 +314,7 @@ const createSettingsModal = () => {
     modal.style.border = "1px solid #ccc";
     modal.style.padding = "20px";
     modal.style.zIndex = "10000";
-    modal.style.width = "200px";
+    modal.style.width = "230px";
     modal.style.height = "120px";
     modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
 
@@ -322,28 +324,41 @@ const createSettingsModal = () => {
     modal.appendChild(title);
 
     // Create a display element for the current level
-    const currentLevelDisplay = document.createElement("div");
-    currentLevelDisplay.textContent = `Current Level: ${currentLevel}`; // Show the latest set level
-    currentLevelDisplay.style.marginBottom = "10px"; // Add margin below the display
-    modal.appendChild(currentLevelDisplay);
+    const simplificationLevelDisplay = document.createElement("div");
+    simplificationLevelDisplay.textContent = `Current Level:`; // Show the latest set level
+    simplificationLevelDisplay.style.marginBottom = "10px"; // Add margin below the display
+    modal.appendChild(simplificationLevelDisplay);
 
     // Create a dropdown for simplification levels
     const select = document.createElement("select");
-    for (let i = 1; i <= 6; i++) {
+    const levels = ["Most Difficult", "Difficult", "Medium", "Easy", "Easiest"];
+    for (let i = 0; i < levels.length; i++) {
         const option = document.createElement("option");
-        option.value = i.toString();
-        option.textContent = `Level ${i}`;
+        option.value = (i + 1).toString(); // Set value from 1 to 5
+        option.textContent = levels[i]; // Set text to the corresponding level
         select.appendChild(option);
     }
     modal.appendChild(select);
 
-    // Set the dropdown to the current level
-    select.value = currentLevel.split(" ")[1];
+    // Add styles to align dropdown and button
+    select.style.display = "inline-block"; // Make dropdown inline
+    select.style.marginRight = "10px"; // Add some space between dropdown and button
+
+    // Retrieve simplificationLevel from local storage
+    chrome.storage.local.get(['simplificationLevel'], (result) => {
+      const simplificationLevel = result.simplificationLevel || null; // Default to null if not set
+      if (simplificationLevel === null) {
+          // Set the dropdown to blank if simplificationLevel is null
+          select.value = ""; // Set to empty string for blank
+      } else {
+          select.value = simplificationLevel.toString(); // Set the dropdown to the current level
+      }
+    });
     
     // Add a confirm button
     const confirmButton = document.createElement("button");
     confirmButton.textContent = "Confirm";
-    confirmButton.style.marginLeft = "20px";
+    confirmButton.style.marginLeft = "10px";
     confirmButton.style.backgroundColor = "#007AFF"; // Match with send button color
     confirmButton.style.color = "white"; // Set text color to white
     confirmButton.style.border = "none"; // Remove border
@@ -352,8 +367,9 @@ const createSettingsModal = () => {
     confirmButton.style.cursor = "pointer"; // Change cursor to pointer
     // Update the current level and display when the confirm button is clicked
     confirmButton.addEventListener("click", () => {
-      currentLevel = `Level ${select.value}`; // Update the current level
-      currentLevelDisplay.textContent = `Current Level: ${currentLevel}`; // Update display
+      const newLevel = parseInt(select.value); // Get the selected value as a number
+      updateSimplificationLevel(newLevel); // Update the simplification level in local storage
+      console.log('simplificationLevel: ', newLevel);
       modal.remove(); // Close the modal
     });
     modal.appendChild(confirmButton);

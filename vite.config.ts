@@ -9,7 +9,7 @@ export default defineConfig({
       input: {
         sidepanel: 'sidepanel.html',
         content: 'public/content.js',
-        background: 'public/background.js'
+        background: 'public/background.ts'
       },
       output: {
         entryFileNames: (chunkInfo) => {
