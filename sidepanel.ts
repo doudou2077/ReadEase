@@ -356,8 +356,8 @@ const createSettingsModal = () => {
   modal.style.border = "1px solid #ccc";
   modal.style.padding = "20px";
   modal.style.zIndex = "10000";
-  modal.style.width = "230px";
-  modal.style.height = "120px";
+  modal.style.width = "280px";
+  modal.style.height = "160px";
   modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
 
   // Add content to the modal
@@ -365,35 +365,74 @@ const createSettingsModal = () => {
   title.textContent = "Simplification Level";
   modal.appendChild(title);
 
-  // Create a display element for the current level
+  // Create a display element for the current text level
+  const currentTextLevel = document.createElement("div");
+  currentTextLevel.style.marginBottom = "15px";
+  currentTextLevel.style.fontSize = "12px";
+  currentTextLevel.style.color = "#666";
+
+  // Get the current text's level from the latest message
+  const latestMessage = document.querySelector('.assistant-message[data-grade-level]');
+  const currentLevel = latestMessage?.getAttribute('data-grade-level');
+  // Convert grade level to difficulty label
+  let displayLevel = 'Not available';
+  switch (currentLevel) {
+    case "College (13-16)":
+      displayLevel = "Most Difficult";
+      break;
+    case "High School (9-12)":
+      displayLevel = "Difficult";
+      break;
+    case "Middle School (6-8)":
+      displayLevel = "Medium";
+      break;
+    case "Elementary (1-5)":
+      displayLevel = "Easy";
+      break;
+    case "Below Kindergarten (K)":
+      displayLevel = "Easiest";
+      break;
+  }
+  currentTextLevel.textContent = `Current text level: ${displayLevel}`;
+  modal.appendChild(currentTextLevel);
+
+  // Create a display element for the preferred level setting
   const simplificationLevelDisplay = document.createElement("div");
-  simplificationLevelDisplay.textContent = `Current Level:`; // Show the latest set level
-  simplificationLevelDisplay.style.marginBottom = "10px"; // Add margin below the display
+  simplificationLevelDisplay.textContent = `Your preferred level:`;
+  simplificationLevelDisplay.style.marginBottom = "10px";
   modal.appendChild(simplificationLevelDisplay);
 
   // Create a dropdown for simplification levels
   const select = document.createElement("select");
-  const levels = ["Most Difficult", "Difficult", "Medium", "Easy", "Easiest"];
-  for (let i = 0; i < levels.length; i++) {
+  const levels = [
+    { value: "1", label: "Most Difficult" },
+    { value: "2", label: "Difficult" },
+    { value: "3", label: "Medium" },
+    { value: "4", label: "Easy" },
+    { value: "5", label: "Easiest" }
+  ];
+
+  for (const level of levels) {
     const option = document.createElement("option");
-    option.value = (i + 1).toString(); // Set value from 1 to 5
-    option.textContent = levels[i]; // Set text to the corresponding level
+    option.value = level.value;
+    option.textContent = level.label;
     select.appendChild(option);
   }
-  modal.appendChild(select);
 
   // Add styles to align dropdown and button
-  select.style.display = "inline-block"; // Make dropdown inline
-  select.style.marginRight = "10px"; // Add some space between dropdown and button
+  select.style.display = "inline-block";
+  select.style.marginRight = "10px";
+  select.style.width = "180px"; // Make dropdown wider to fit the text
+
+  modal.appendChild(select);
 
   // Retrieve simplificationLevel from local storage
   chrome.storage.local.get(['simplificationLevel'], (result) => {
-    const simplificationLevel = result.simplificationLevel || null; // Default to null if not set
+    const simplificationLevel = result.simplificationLevel || null;
     if (simplificationLevel === null) {
-      // Set the dropdown to blank if simplificationLevel is null
-      select.value = ""; // Set to empty string for blank
+      select.value = "";
     } else {
-      select.value = simplificationLevel.toString(); // Set the dropdown to the current level
+      select.value = simplificationLevel.toString();
     }
   });
 
@@ -401,18 +440,18 @@ const createSettingsModal = () => {
   const confirmButton = document.createElement("button");
   confirmButton.textContent = "Confirm";
   confirmButton.style.marginLeft = "10px";
-  confirmButton.style.backgroundColor = "#007AFF"; // Match with send button color
-  confirmButton.style.color = "white"; // Set text color to white
-  confirmButton.style.border = "none"; // Remove border
-  confirmButton.style.borderRadius = "6px"; // Add border radius for rounded corners
-  confirmButton.style.padding = "5px 5px"; // Add padding for better appearance
-  confirmButton.style.cursor = "pointer"; // Change cursor to pointer
-  // Update the current level and display when the confirm button is clicked
+  confirmButton.style.backgroundColor = "#007AFF";
+  confirmButton.style.color = "white";
+  confirmButton.style.border = "none";
+  confirmButton.style.borderRadius = "6px";
+  confirmButton.style.padding = "5px 5px";
+  confirmButton.style.cursor = "pointer";
+
   confirmButton.addEventListener("click", () => {
-    const newLevel = parseInt(select.value); // Get the selected value as a number
-    updateSimplificationLevel(newLevel); // Update the simplification level in local storage
+    const newLevel = parseInt(select.value);
+    updateSimplificationLevel(newLevel);
     console.log('simplificationLevel: ', newLevel);
-    modal.remove(); // Close the modal
+    modal.remove();
   });
   modal.appendChild(confirmButton);
 
