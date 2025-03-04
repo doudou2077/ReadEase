@@ -439,19 +439,19 @@ const createSettingsModal = () => {
   // Convert grade level to difficulty label
   let displayLevel = 'Not available';
   switch (currentLevel) {
-    case "College (13-16)":
+    case GRADE_LEVELS.COLLEGE_GRADUATE:
       displayLevel = "Most Difficult";
       break;
-    case "High School (9-12)":
+    case GRADE_LEVELS.COLLEGE:
       displayLevel = "Difficult";
       break;
-    case "Middle School (6-8)":
+    case GRADE_LEVELS.MIDDLE_SCHOOL:
       displayLevel = "Medium";
       break;
-    case "Elementary (1-5)":
+    case GRADE_LEVELS.ELEMENTARY:
       displayLevel = "Easy";
       break;
-    case "Below Kindergarten (K)":
+    case GRADE_LEVELS.BELOW_KINDERGARTEN:
       displayLevel = "Easiest";
       break;
   }
