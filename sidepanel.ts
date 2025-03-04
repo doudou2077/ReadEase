@@ -4,6 +4,8 @@ import type { GradeLevel } from './src/types.js';
 // export { };
 /// <reference types="chrome" />
 
+const HIDE_SETTINGS_PROMPT_KEY = 'hideSettingsPrompt';
+
 // Notify background script that sidepanel is ready
 chrome.runtime.sendMessage({ action: "sidepanel_ready" });
 
@@ -158,48 +160,108 @@ const addMessage = (
           return;
         }
 
+        chrome.storage.local.get([HIDE_SETTINGS_PROMPT_KEY], (result) => {
+          if (!result[HIDE_SETTINGS_PROMPT_KEY]) {
+            // Create settings prompt if it doesn't exist
+            const existingPrompt = messageDiv.querySelector('.settings-prompt');
+            if (!existingPrompt) {
+              const settingsPrompt = document.createElement('div');
+              settingsPrompt.className = 'settings-prompt';
+              settingsPrompt.style.marginTop = '8px';
+              settingsPrompt.style.padding = '8px';
+              settingsPrompt.style.backgroundColor = '#f0f0f0';
+              settingsPrompt.style.borderRadius = '4px';
+              settingsPrompt.style.fontSize = '12px';
+              settingsPrompt.style.display = 'flex';
+              settingsPrompt.style.flexDirection = 'column';
+              settingsPrompt.style.gap = '8px';
 
-        // Create settings prompt if it doesn't exist
-        const existingPrompt = messageDiv.querySelector('.settings-prompt');
-        if (!existingPrompt) {
-          const settingsPrompt = document.createElement('div');
-          settingsPrompt.className = 'settings-prompt';
-          settingsPrompt.style.marginTop = '8px';
-          settingsPrompt.style.padding = '8px';
-          settingsPrompt.style.backgroundColor = '#f0f0f0';
-          settingsPrompt.style.borderRadius = '4px';
-          settingsPrompt.style.fontSize = '12px';
-          settingsPrompt.style.display = 'flex';
-          settingsPrompt.style.justifyContent = 'space-between';
-          settingsPrompt.style.alignItems = 'center';
+              // Top row with text and close button
+              const topRow = document.createElement('div');
+              topRow.style.display = 'flex';
+              topRow.style.justifyContent = 'space-between';
+              topRow.style.alignItems = 'center';
 
-          const promptContent = document.createElement('div');
-          promptContent.innerHTML = 'Want to set your preferred simplification level? <a style="color: #007AFF; cursor: pointer; text-decoration: underline;">Set preferred level</a>';
+              const promptContent = document.createElement('div');
+              promptContent.innerHTML = 'Want to set your preferred simplification level? <a style="color: #007AFF; cursor: pointer; text-decoration: underline;">Set preferred level</a>';
 
-          const closeButton = document.createElement('button');
-          closeButton.innerHTML = '×';
-          closeButton.style.border = 'none';
-          closeButton.style.background = 'none';
-          closeButton.style.cursor = 'pointer';
-          closeButton.style.fontSize = '16px';
-          closeButton.style.padding = '0 4px';
+              const closeButton = document.createElement('button');
+              closeButton.innerHTML = '×';
+              closeButton.style.border = 'none';
+              closeButton.style.background = 'none';
+              closeButton.style.cursor = 'pointer';
+              closeButton.style.fontSize = '16px';
+              closeButton.style.padding = '0 4px';
 
-          settingsPrompt.appendChild(promptContent);
-          settingsPrompt.appendChild(closeButton);
+              topRow.appendChild(promptContent);
+              topRow.appendChild(closeButton);
+              settingsPrompt.appendChild(topRow);
 
-          // Add click handlers
-          const settingsLink = promptContent.querySelector('a');
-          settingsLink?.addEventListener('click', () => {
-            createSettingsModal();
-            settingsPrompt.remove();
-          });
+              // Add checkbox row
+              const checkboxContainer = document.createElement('div');
+              checkboxContainer.style.display = 'flex';
+              checkboxContainer.style.alignItems = 'center';
+              checkboxContainer.style.gap = '4px';
+              checkboxContainer.style.fontSize = '11px';
+              checkboxContainer.style.color = '#666';
 
-          closeButton.addEventListener('click', () => {
-            settingsPrompt.remove();
-          });
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.id = 'dontShowAgain';
 
-          messageDiv.appendChild(settingsPrompt);
-        }
+              const label = document.createElement('label');
+              label.htmlFor = 'dontShowAgain';
+              label.textContent = "Don't show this again";
+
+              checkboxContainer.appendChild(checkbox);
+              checkboxContainer.appendChild(label);
+              settingsPrompt.appendChild(checkboxContainer);
+
+              // Add buttons container
+              const buttonsContainer = document.createElement('div');
+              buttonsContainer.style.display = 'flex';
+              buttonsContainer.style.justifyContent = 'flex-end';
+              buttonsContainer.style.marginTop = '8px';
+              buttonsContainer.style.gap = '8px';
+
+              // Add confirm button
+              const confirmButton = document.createElement('button');
+              confirmButton.textContent = 'Confirm';
+              confirmButton.style.backgroundColor = '#007AFF';
+              confirmButton.style.color = 'white';
+              confirmButton.style.border = 'none';
+              confirmButton.style.borderRadius = '4px';
+              confirmButton.style.padding = '4px 8px';
+              confirmButton.style.cursor = 'pointer';
+              confirmButton.style.fontSize = '10px';
+
+              // Add click handlers
+              const settingsLink = promptContent.querySelector('a');
+              settingsLink?.addEventListener('click', () => {
+                createSettingsModal();
+                settingsPrompt.remove();
+              });
+
+              closeButton.addEventListener('click', () => {
+                settingsPrompt.remove();
+              });
+
+              confirmButton.addEventListener('click', () => {
+                if (checkbox.checked) {
+                  chrome.storage.local.set({ [HIDE_SETTINGS_PROMPT_KEY]: true }, () => {
+                    console.log('Settings prompt preference saved');
+                  });
+                }
+                settingsPrompt.remove();
+              });
+
+              buttonsContainer.appendChild(confirmButton);
+              settingsPrompt.appendChild(buttonsContainer);
+              messageDiv.appendChild(settingsPrompt);
+            }
+          }
+        });
+
 
         // Send to background.js for API call 
         chrome.runtime.sendMessage({
