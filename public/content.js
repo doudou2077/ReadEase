@@ -97,13 +97,11 @@ const createModal = (selectedText) => {
           gradeLevel: gradeLevel,
           readingLevel: readingLevel
         }
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error("Runtime error:", chrome.runtime.lastError);
-        } else {
-          console.log("Message sent successfully");
-          modal.remove();
-        }
+      }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
+        modal.remove();
       });
     } else {
       console.log("No text currently selected");
@@ -121,6 +119,9 @@ const createModal = (selectedText) => {
         feature: "summarize",
         text: lastSelectedText
       }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
         modal.remove();
       });
     } else {
@@ -138,6 +139,9 @@ const createModal = (selectedText) => {
         feature: "tts",
         text: lastSelectedText
       }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
         modal.remove();
       });
     } else {
@@ -200,13 +204,10 @@ const createFloatingButton = () => {
           gradeLevel: gradeLevel,
           readingLevel: readingLevel
         }
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error("Runtime error:", chrome.runtime.lastError);
-        } else {
-          console.log("Message sent successfully");
-
-        }
+      }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
       });
     } else {
       console.log("No text currently selected");

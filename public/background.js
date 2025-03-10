@@ -2,7 +2,7 @@ import { generateContent } from './api.js';
 import { GRADE_LEVELS, SIMPLIFICATION_PROMPTS } from './gradeConfig.js';
 
 // Function to update simplification level
-const updateSimplificationLevel = (level: number) => {
+const updateSimplificationLevel = (level) => {
     chrome.storage.local.set({ simplificationLevel: level }, () => {
         console.log('Simplification level set to:', level);
     });
@@ -21,7 +21,7 @@ chrome.action.onClicked.addListener((tab) => {
 
 // Keep track of sidepanel state
 let sidePanelReady = false;
-let prompt = ''
+let prompt = '';
 
 // Listen for messages from sidepanel to know when it's ready
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -107,7 +107,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     error: error.message || "Failed to simplify text"
                 });
             });
-        return true
+        return true;
     }
 
     console.log("Background received text:", message.text);
@@ -121,7 +121,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.sidePanel.open({ windowId: sender.tab.windowId })
             .then(() => {
                 // Wait for sidepanel to be ready
-                return new Promise<void>((resolve) => {
+                return new Promise((resolve) => {
                     const checkReady = () => {
                         if (sidePanelReady) {
                             resolve();
@@ -179,20 +179,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 //update simplication level to the reading level of the original text
                                 switch (simplificationLevel) {
                                     case 'College Graduate (17+)':
-                                        updateSimplificationLevel(1)
-                                        break
+                                        updateSimplificationLevel(1);
+                                        break;
                                     case 'College (13-16)':
-                                        updateSimplificationLevel(2)
-                                        break
+                                        updateSimplificationLevel(2);
+                                        break;
                                     case 'High School (9-12)':
-                                        updateSimplificationLevel(3)
-                                        break
+                                        updateSimplificationLevel(3);
+                                        break;
                                     case 'Middle School (6-8)':
-                                        updateSimplificationLevel(4)
-                                        break
+                                        updateSimplificationLevel(4);
+                                        break;
                                     case 'Elementary (1-5)':
-                                        updateSimplificationLevel(5)
-                                        break
+                                        updateSimplificationLevel(5);
+                                        break;
                                 }
 
                             } else {
@@ -200,20 +200,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 console.log("Simplification level is set:", simplificationLevel);
                                 switch (simplificationLevel) {
                                     case 1:
-                                        promptTemplate = SIMPLIFICATION_PROMPTS["College Graduate (17+)"]
-                                        break
+                                        promptTemplate = SIMPLIFICATION_PROMPTS["College Graduate (17+)"];
+                                        break;
                                     case 2:
-                                        promptTemplate = SIMPLIFICATION_PROMPTS["College (13-16)"]
-                                        break
+                                        promptTemplate = SIMPLIFICATION_PROMPTS["College (13-16)"];
+                                        break;
                                     case 3:
-                                        promptTemplate = SIMPLIFICATION_PROMPTS["High School (9-12)"]
-                                        break
+                                        promptTemplate = SIMPLIFICATION_PROMPTS["High School (9-12)"];
+                                        break;
                                     case 4:
-                                        promptTemplate = SIMPLIFICATION_PROMPTS["Middle School (6-8)"]
-                                        break
+                                        promptTemplate = SIMPLIFICATION_PROMPTS["Middle School (6-8)"];
+                                        break;
                                     case 5:
-                                        promptTemplate = SIMPLIFICATION_PROMPTS["Elementary (1-5)"]
-                                        break
+                                        promptTemplate = SIMPLIFICATION_PROMPTS["Elementary (1-5)"];
+                                        break;
                                 }
                                 // Get prompt template based on current level
                                 console.log("Prompt template found:", !!promptTemplate);
@@ -227,7 +227,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 prompt = promptTemplate.replace('{{text}}', message.text);
                                 console.log("Using prompt:", prompt);
                             }
-                        }
+                        };
                         // Call the function
                         getSimplificationLevelAndPrompt();
 
@@ -261,15 +261,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                     currentLevel: currentLevel,
                                     remainingLevels: remainingLevels,
                                     readability: message.readability
-                                }, (response) => {
-                                    if (chrome.runtime.lastError) {
-                                        console.error("Error sending message to side panel:", chrome.runtime.lastError);
-                                    } else {
-                                        console.log("Message sent successfully to side panel:", response);
-                                    }
-                                })
-                            })
-                        return true
+                                }, () => {
+                                    chrome.runtime.lastError 
+                                        ? console.error("Runtime error:", chrome.runtime.lastError) 
+                                        : console.log("Message sent successfully");
+                                });
+                            });
+                        return true;
 
                     case "summarize":
                         prompt = "Please provide a concise summary of the following text:";
@@ -280,4 +278,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
             });
     }
-})
+}); 
