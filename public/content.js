@@ -125,9 +125,18 @@ const createModal = (selectedText) => {
         modal.remove();
       });
     } else {
-      console.log("No text currently selected");
-      alert("Please select some text first.");
-      modal.remove();
+      console.log("No text selected, sending current URL for summarization", window.location.href);
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "summarize",
+        text: window.location.href,
+        isUrl: true
+      }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
+        modal.remove();
+      });
     }
   });
 

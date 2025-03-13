@@ -312,4 +312,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
             });
     }
+    if (message && message.feature === "summarize") {
+        console.log("=== Background summarize Handler ===");
+        console.log("Message received:", message);
+        if (message.isUrl) {
+            console.log("Summarizing URL:", message.text);
+        } else {
+            console.log("Summarizing text:", message.text);
+        }
+        if (!sender.tab || typeof sender.tab.windowId !== 'number') {
+            console.error("Invalid sender or window ID");
+            return;
+        }
+
+        chrome.sidePanel.open({ windowId: sender.tab.windowId })
+    }
 }); 
