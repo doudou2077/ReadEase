@@ -125,9 +125,18 @@ const createModal = (selectedText) => {
         modal.remove();
       });
     } else {
-      console.log("No text currently selected");
-      alert("Please select some text first.");
-      modal.remove();
+      console.log("No text selected, sending current URL for summarization", window.location.href);
+      chrome.runtime.sendMessage({
+        action: "openSidePanel",
+        feature: "summarize",
+        text: window.location.href,
+        isUrl: true
+      }, () => {
+        chrome.runtime.lastError 
+          ? console.error("Runtime error:", chrome.runtime.lastError) 
+          : console.log("Message sent successfully");
+        modal.remove();
+      });
     }
   });
 
@@ -287,9 +296,12 @@ function createHoverIcon() {
   hoverIcon.addEventListener("click", (e) => {
     e.preventDefault();  // Prevent any default behavior
     console.log("Hover icon clicked, last selected text:", lastSelectedText);
-
+    
+    // Always create and show the modal, regardless of text selection
+    createModal(lastSelectedText);
+    
+    // Store the selected text and readability info if text is selected
     if (lastSelectedText && lastSelectedText.length > 0) {
-      // Calculate readability when text is selected
       const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
       const readingLevel = getReadingLevelDescription(gradeLevel);
       console.log("Text Readability:", {
@@ -298,7 +310,6 @@ function createHoverIcon() {
         readingLevel: readingLevel
       });
 
-      console.log("Creating modal with text:", lastSelectedText);
       chrome.storage.local.set({
         selectedText: lastSelectedText,
         readability: {
@@ -310,11 +321,9 @@ function createHoverIcon() {
         if (chrome.runtime.lastError) {
           console.error("Storage error:", chrome.runtime.lastError);
         }
-        createModal(lastSelectedText);
       });
     } else {
-      console.log("No text selected");
-      alert("Please select some text first.");
+      console.log("No text currently selected");
     }
   });
 

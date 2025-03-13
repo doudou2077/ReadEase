@@ -302,14 +302,89 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 });
                             });
                         return true;
-
-                    case "summarize":
-                        prompt = "Please provide a concise summary of the following text:";
-                        break;
-                    case "tts":
-                        prompt = "Please convert this text to a more speech-friendly format:";
-                        break;
                 }
             });
+    }
+    if (message && message.feature === "summarize") {
+        console.log("=== Background summarize Handler ===");
+        console.log("Message received:", message);
+        if (message.isUrl) {
+            console.log("Summarizing URL:", message.text);
+        } else {
+            console.log("Summarizing text:", message.text);
+        }
+        if (!sender.tab || typeof sender.tab.windowId !== 'number') {
+            console.error("Invalid sender or window ID");
+            return;
+        }
+
+        chrome.sidePanel.open({ windowId: sender.tab.windowId })
+            .then(() => {
+                console.log("Side panel opened for summarize, waiting for ready state");
+                // Wait for sidepanel to be ready
+                return new Promise((resolve) => {
+                    const checkReady = () => {
+                        if (sidePanelReady) {
+                            console.log("Side panel ready for summarization");
+                            resolve();
+                        } else {
+                            console.log("Waiting for side panel...");
+                            setTimeout(checkReady, 100);
+                        }
+                    };
+                    checkReady();
+                });
+            })
+            .then(async () => {
+                if (!message.text) {
+                    console.error("No text provided in message");
+                    return;
+                }
+
+                let summarizePrompt;
+                if (message.isUrl) {
+                    console.log("Summarizing URL:", message.text);
+                    summarizePrompt = `Please visit the following URL and provide a concise summary of its main content: ${message.text}`;
+                } else {
+                    console.log("Summarizing text:", message.text);
+                    summarizePrompt = `Please provide a concise summary of the following text: ${message.text}`;
+                }
+
+                console.log("=== Calling API for Summarization ===");
+                generateContent(summarizePrompt)
+                    .then(response => {
+                        console.log("=== Summarize API Response ===");
+                        console.log("Raw response:", response);
+
+                        // Send the summary to the sidepanel
+                        return chrome.runtime.sendMessage({
+                            target: "sidepanel",
+                            feature: "summarize",
+                            text: message.text,
+                            response: response,
+                            type: message.isUrl ? "url" : "text"
+                        }, () => {
+                            if (chrome.runtime.lastError) {
+                                console.error("Runtime error:", chrome.runtime.lastError);
+                            } else {
+                                console.log("Summary sent successfully to sidepanel");
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error in summarization API call:", error);
+                        // Send error to sidepanel
+                        return chrome.runtime.sendMessage({
+                            target: "sidepanel",
+                            feature: "summarize",
+                            error: error.message
+                        }, () => {
+                            if (chrome.runtime.lastError) {
+                                console.error("Runtime error when sending error:", chrome.runtime.lastError);
+                            }
+                        });
+                    });
+            });
+        return true;
     }
 }); 
