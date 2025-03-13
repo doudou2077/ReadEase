@@ -59,11 +59,17 @@ chrome.runtime.onMessage.addListener((message: Message) => {
     } else if (message.response) {
       console.log("Handling response case:", {
         currentLevel: message.currentLevel,
-        remainingLevels: message.remainingLevels
+        remainingLevels: message.remainingLevels,
+        type: message.type
       });
 
+      // If it's a URL summary, add a prefix to the response
+      const displayResponse = message.feature === "summarize" && message.type === "url" 
+        ? `Summary of ${message.text}:\n\n${message.response}`
+        : message.response;
+
       addMessage(
-        message.response,
+        displayResponse,
         false,
         message.currentLevel || message.readability?.readingLevel,
         message.remainingLevels === 0
