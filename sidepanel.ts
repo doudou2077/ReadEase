@@ -6,6 +6,52 @@ import type { GradeLevel } from './src/types.js';
 
 const HIDE_SETTINGS_PROMPT_KEY = 'hideSettingsPrompt';
 
+const style = document.createElement('style');
+style.textContent = `
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-message {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    color: #666;
+  }
+`;
+document.head.appendChild(style);
+
+// create a loading message
+const addLoadingMessage = () => {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message assistant-message loading-message';
+
+  const spinner = document.createElement('div');
+  spinner.className = 'loading-spinner';
+
+  const text = document.createElement('span');
+  text.textContent = 'Processing your request...';
+
+  messageDiv.appendChild(spinner);
+  messageDiv.appendChild(text);
+  chatContainer.appendChild(messageDiv);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+
+  return messageDiv;
+};
+
 // Notify background script that sidepanel is ready
 chrome.runtime.sendMessage({ action: "sidepanel_ready" });
 
@@ -49,6 +95,9 @@ chrome.runtime.onMessage.addListener((message: Message) => {
 
   if (message.target === "sidepanel") {
     if (message.error) {
+      const loadingMessages = document.querySelectorAll('.loading-message');
+      loadingMessages.forEach(msg => msg.remove());
+
       console.log("Handling error case:", {
         error: message.error,
         currentLevel: message.currentLevel,
@@ -67,6 +116,9 @@ chrome.runtime.onMessage.addListener((message: Message) => {
         addMessage(`Error: ${message.error}`, false);
       }
     } else if (message.response) {
+      const loadingMessages = document.querySelectorAll('.loading-message');
+      loadingMessages.forEach(msg => msg.remove());
+
       console.log("Handling response case:", {
         currentLevel: message.currentLevel,
         remainingLevels: message.remainingLevels,
@@ -74,7 +126,7 @@ chrome.runtime.onMessage.addListener((message: Message) => {
       });
 
       // If it's a URL summary, add a prefix to the response with bold title and hyperlink
-      const displayResponse = message.feature === "summarize" && message.type === "url" 
+      const displayResponse = message.feature === "summarize" && message.type === "url"
         ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
         : message.feature === "summarize"
           ? `**Summary**\n\n${message.response}`
@@ -181,6 +233,12 @@ const addMessage = (
           console.error("Missing data:", { currentLevel, textContent });
           return;
         }
+
+        // Add loading message
+        const loadingMessage = addLoadingMessage();
+
+
+
 
         chrome.storage.local.get([HIDE_SETTINGS_PROMPT_KEY], (result) => {
           if (!result[HIDE_SETTINGS_PROMPT_KEY]) {
@@ -291,9 +349,13 @@ const addMessage = (
           text: textContent,
           currentLevel: currentLevel as GradeLevel
         }, (response) => {
+          // Remove loading message
+          loadingMessage.remove();
+
           console.log("=== Response from Background ===");
           if (chrome.runtime.lastError) {
             console.error("Runtime error:", chrome.runtime.lastError);
+            addMessage(`Error: ${chrome.runtime.lastError.message}`, false);
             return;
           }
           console.log("Got response:", response);
