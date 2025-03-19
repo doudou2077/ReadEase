@@ -1,5 +1,46 @@
 import textReadability from 'text-readability';
 
+const style = document.createElement('style');
+style.textContent = `
+  .loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loading-message {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    color: #666;
+  }
+`;
+document.head.appendChild(style);
+
+
+const addLoadingToButton = (button) => {
+  const originalText = button.textContent;
+  const spinner = document.createElement('div');
+  spinner.className = 'loading-spinner';
+  button.textContent = '';
+  button.appendChild(spinner);
+  button.appendChild(document.createTextNode('Processing...'));
+  return () => {
+    button.textContent = originalText;
+  };
+};
+
+
 console.log("Content script loaded");
 
 export function getReadingLevelDescription(gradeLevel) {
@@ -82,6 +123,9 @@ const createModal = (selectedText) => {
         return;
       }
 
+      // Add loading state to button
+      const resetLoading = addLoadingToButton(simplifyButton);
+
       console.log("Text Readability:", {
         text: lastSelectedText,
         gradeLevel: gradeLevel,
@@ -98,8 +142,11 @@ const createModal = (selectedText) => {
           readingLevel: readingLevel
         }
       }, () => {
-        chrome.runtime.lastError 
-          ? console.error("Runtime error:", chrome.runtime.lastError) 
+        // Reset button state
+        resetLoading();
+
+        chrome.runtime.lastError
+          ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
         modal.remove();
       });
@@ -119,8 +166,8 @@ const createModal = (selectedText) => {
         feature: "summarize",
         text: lastSelectedText
       }, () => {
-        chrome.runtime.lastError 
-          ? console.error("Runtime error:", chrome.runtime.lastError) 
+        chrome.runtime.lastError
+          ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
         modal.remove();
       });
@@ -132,8 +179,8 @@ const createModal = (selectedText) => {
         text: window.location.href,
         isUrl: true
       }, () => {
-        chrome.runtime.lastError 
-          ? console.error("Runtime error:", chrome.runtime.lastError) 
+        chrome.runtime.lastError
+          ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
         modal.remove();
       });
@@ -148,8 +195,8 @@ const createModal = (selectedText) => {
         feature: "tts",
         text: lastSelectedText
       }, () => {
-        chrome.runtime.lastError 
-          ? console.error("Runtime error:", chrome.runtime.lastError) 
+        chrome.runtime.lastError
+          ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
         modal.remove();
       });
@@ -214,8 +261,8 @@ const createFloatingButton = () => {
           readingLevel: readingLevel
         }
       }, () => {
-        chrome.runtime.lastError 
-          ? console.error("Runtime error:", chrome.runtime.lastError) 
+        chrome.runtime.lastError
+          ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
       });
     } else {
@@ -296,10 +343,10 @@ function createHoverIcon() {
   hoverIcon.addEventListener("click", (e) => {
     e.preventDefault();  // Prevent any default behavior
     console.log("Hover icon clicked, last selected text:", lastSelectedText);
-    
+
     // Always create and show the modal, regardless of text selection
     createModal(lastSelectedText);
-    
+
     // Store the selected text and readability info if text is selected
     if (lastSelectedText && lastSelectedText.length > 0) {
       const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
