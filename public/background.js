@@ -341,13 +341,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     return;
                 }
 
+                let basePrompt = `Please provide a comprehensive summary following these guidelines:
+                                        Who is involved?
+                                        What is happening?
+                                        When did it take place?
+                                        Where does it occur?
+                                        Why is it important or happening?
+                                        How does it unfold or work?
+                                        
+                                        If certain details are not provided in the content, exclude them naturally without adding assumptions. 
+                                        Ensure the summary remains clear, concise, and faithful to the original content.`;
+
                 let summarizePrompt;
+
                 if (message.isUrl) {
                     console.log("Summarizing URL:", message.text);
-                    summarizePrompt = `Please visit the following URL and provide a concise summary of its main content: ${message.text}`;
+                    summarizePrompt = `${basePrompt}
+
+                                        Please visit the following URL and provide a concise summary of its main content based on the above instructions:
+                                        ${message.text}`;
                 } else {
                     console.log("Summarizing text:", message.text);
-                    summarizePrompt = `Please provide a concise summary of the following text: ${message.text}`;
+                    summarizePrompt = `${basePrompt}
+
+                                        Content to summarize:
+                                        ${message.text}`;
                 }
 
                 console.log("=== Calling API for Summarization ===");
