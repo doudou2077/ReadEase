@@ -72,6 +72,7 @@ interface Message {
   currentLevel?: GradeLevel;
   remainingLevels?: number;
   type?: string; // Add the 'type' property
+  //fontSize: number // Add the font size property
 }
 
 // Add this function before the message listener
@@ -178,6 +179,12 @@ const addMessage = (
 
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+
+  // Retrieve font size from local storage
+  chrome.storage.local.get(['fontSize'], (result) => {
+    const fontSize = result.fontSize || 16; // Default to 16 if not set
+    messageDiv.style.fontSize = `${fontSize}px`; // Apply the font size to the message
+  });
 
   // Store grade level in data attribute
   if (currentGradeLevel) {
@@ -485,6 +492,13 @@ const updateSimplificationLevel = (level: number) => {
   });
 };
 
+// Function to update simplification level
+const updateFontSize = (size: number) => {
+  chrome.storage.local.set({ fontSize: size }, () => {
+    console.log('Font size set to:', size);
+  });
+};
+
 // Function to create settings modal
 const createSettingsModal = () => {
   // Remove existing settings modal if it exists
@@ -496,15 +510,20 @@ const createSettingsModal = () => {
   modal.id = "settings-modal";
   modal.style.position = "fixed";
   modal.style.left = "50%";
-  modal.style.top = "15%";
+  modal.style.top = "20%";
   modal.style.transform = "translate(-50%, -50%)";
   modal.style.backgroundColor = "white";
   modal.style.border = "1px solid #ccc";
-  modal.style.padding = "20px";
+  //modal.style.paddingLeft = "20px";
   modal.style.zIndex = "10000";
   modal.style.width = "280px";
-  modal.style.height = "160px";
+  modal.style.height = "280px";
   modal.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+  modal.style.borderRadius = "20px";
+  modal.style.display = "flex"; // Use flexbox for centering
+  modal.style.flexDirection = "column"; // Stack children vertically
+  modal.style.alignItems = "center"; // Center items horizontally
+  modal.style.justifyContent = "center"; // Center items vertically
 
   // Add content to the modal
   const title = document.createElement("h3");
@@ -582,6 +601,67 @@ const createSettingsModal = () => {
     }
   });
 
+  // Add font adjustment choices to the modal
+  const fontSize = document.createElement("h3");
+  fontSize.textContent = "Font Size";
+  modal.appendChild(fontSize);
+
+   // Create a dropdown for simplification levels
+   const selectFontSize = document.createElement("select");
+   const sizes = [
+     { value: "14", label: "14" },
+     { value: "16", label: "16" },
+     { value: "18", label: "18" },
+     { value: "20", label: "20" },
+     { value: "22", label: "22" },
+     { value: "24", label: "24" }
+   ];
+ 
+   for (const size of sizes) {
+     const option = document.createElement("option");
+     option.value = size.value;
+     option.textContent = size.label;
+     selectFontSize.appendChild(option);
+   }
+ 
+   // Add styles to align dropdown and button
+   selectFontSize.style.display = "inline-block";
+   selectFontSize.style.marginRight = "10px";
+   selectFontSize.style.width = "180px"; // Make dropdown wider to fit the text
+ 
+   modal.appendChild(selectFontSize);
+
+  // Retrieve font size from local storage
+  chrome.storage.local.get(['fontSize'], (result) => {
+    const fontSize = result.fontSize || null;
+    if (fontSize === null) {
+      selectFontSize.value = "";
+    } else {
+      selectFontSize.value = fontSize.toString();
+    }
+  });
+
+  // Add a buttons container for confirm and cancel buttons
+  const buttonsContainer = document.createElement("div");
+  buttonsContainer.style.display = "flex"; // Use flexbox for horizontal alignment
+  buttonsContainer.style.marginTop = "10px"; // Add some margin for spacing
+
+  // Add a cancel button
+  const cancelButton = document.createElement("button");
+  cancelButton.textContent = "Cancel";
+  cancelButton.style.marginLeft = "30px";
+  cancelButton.style.backgroundColor = "red";
+  cancelButton.style.color = "white";
+  cancelButton.style.border = "none";
+  cancelButton.style.borderRadius = "6px";
+  cancelButton.style.padding = "5px 5px";
+  cancelButton.style.cursor = "pointer";
+
+  cancelButton.addEventListener("click", () => {
+    modal.remove();
+  });
+  buttonsContainer.appendChild(cancelButton);
+
   // Add a confirm button
   const confirmButton = document.createElement("button");
   confirmButton.textContent = "Confirm";
@@ -597,9 +677,14 @@ const createSettingsModal = () => {
     const newLevel = parseInt(select.value);
     updateSimplificationLevel(newLevel);
     console.log('simplificationLevel: ', newLevel);
+    const newSize = parseInt(selectFontSize.value);
+    updateFontSize(newSize);
+    console.log('newSize: ', newSize);
     modal.remove();
   });
-  modal.appendChild(confirmButton);
+  buttonsContainer.appendChild(confirmButton);
+
+  modal.appendChild(buttonsContainer);
 
   // Append modal to document body
   document.body.appendChild(modal);

@@ -83,12 +83,13 @@ const createModal = (selectedText) => {
   modal.style.left = "85%";
   modal.style.top = "75%";
   modal.style.transform = "translate(-50%, -50%)";
-  modal.style.backgroundColor = "white";
-  modal.style.border = "1px solid #ccc";
+  modal.style.backgroundColor = "#ca80e8";
+  modal.style.border = "1px solid #ca80e8";
   modal.style.padding = "20px";
   modal.style.zIndex = "10000";
   modal.style.width = "13%";
   modal.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+  modal.style.borderRadius = "20px";
 
   // Create buttons
   const createButton = (text) => {
@@ -97,9 +98,9 @@ const createModal = (selectedText) => {
     button.style.width = "90%";
     button.style.margin = "10px";
     button.style.padding = "10px";
-    button.style.border = "2px solid #ca80e8";
-    button.style.backgroundColor = "#ca80e8";
-    button.style.color = "white";
+    button.style.border = "2px solid white";
+    button.style.backgroundColor = "white";
+    button.style.color = "#ca80e8";
     button.style.borderRadius = "5px";
     button.style.cursor = "pointer";
     return button;
