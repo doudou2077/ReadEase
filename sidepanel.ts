@@ -28,6 +28,16 @@ interface Message {
   type?: string; // Add the 'type' property
 }
 
+// Add this function before the message listener
+const getDomainName = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch {
+    return url;
+  }
+};
+
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message: Message) => {
   console.log("Sidepanel received message:", {
@@ -63,10 +73,12 @@ chrome.runtime.onMessage.addListener((message: Message) => {
         type: message.type
       });
 
-      // If it's a URL summary, add a prefix to the response
+      // If it's a URL summary, add a prefix to the response with bold title and hyperlink
       const displayResponse = message.feature === "summarize" && message.type === "url" 
-        ? `Summary of ${message.text}:\n\n${message.response}`
-        : message.response;
+        ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
+        : message.feature === "summarize"
+          ? `**Summary**\n\n${message.response}`
+          : message.response;
 
       addMessage(
         displayResponse,
@@ -122,7 +134,11 @@ const addMessage = (
 
   // Create text container
   const textDiv = document.createElement('div');
-  textDiv.textContent = content;
+  // Convert markdown-style titles and bold text to HTML
+  const formattedContent = content
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  textDiv.innerHTML = formattedContent;
   messageDiv.appendChild(textDiv);
 
   // Add simplify button only for assistant messages
