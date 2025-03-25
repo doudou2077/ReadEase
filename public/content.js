@@ -124,8 +124,6 @@ const createModal = (selectedText) => {
         return;
       }
 
-      // Add loading state to button
-      const resetLoading = addLoadingToButton(simplifyButton);
 
       console.log("Text Readability:", {
         text: lastSelectedText,
@@ -143,9 +141,6 @@ const createModal = (selectedText) => {
           readingLevel: readingLevel
         }
       }, () => {
-        // Reset button state
-        resetLoading();
-
         chrome.runtime.lastError
           ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
@@ -262,6 +257,12 @@ const createFloatingButton = () => {
           readingLevel: readingLevel
         }
       }, () => {
+        // Add loading message to sidepanel
+        chrome.runtime.sendMessage({
+          target: "sidepanel",
+          action: "showLoading"
+        });
+
         chrome.runtime.lastError
           ? console.error("Runtime error:", chrome.runtime.lastError)
           : console.log("Message sent successfully");
