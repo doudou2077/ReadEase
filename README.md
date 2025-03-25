@@ -1,50 +1,27 @@
-# React + TypeScript + Vite
+# README
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Description
+Our web extension is designed to enhance web accessibility for individuals with reading disabilities by simplifying, summarizing, and vocalizing webpage content. It uses advanced AI-powered text processing to automatically adjust content to different reading levels based on Flesch-Kincaid Grade standards, significantly improving comprehension.
 
-Currently, two official plugins are available:
+## Installation
+To install the extension, visit the web extension store and download it directly to your browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Usage
+To use the extension, simply select text on a webpage and click the hovering icon. Choose from the options: **Simplify**, **Summarize**, or **Text-to-Speech**:
+- **Simplify**: Simplifies the selected text, with an option to further simplify to accommodate different comprehension levels.
+- **Summarize**: Summarizes the text on the entire webpage or summarize selected text. This summary can also be simplified for easier understanding.
+- **Text-to-Speech**: Reads out the selected text or simplified content aloud.
 
-## Expanding the ESLint configuration
+If no text is selected and **Summarize** or **Text-to-Speech** is chosen, the extension will process the entire webpage content.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Features
+### Current Features
+- **Simplify**: Reduces complexity of text, with multiple levels of simplification available.
+- **Summarize**: Provides a concise summary of webpage content, which can also be simplified.
+- **Text-to-Speech**: Vocalizes text for auditory learning and accessibility.
 
-- Configure the top-level `parserOptions` property like this:
+### Planned Features
+- **Enhanced Text-to-Speech**: Integration with both simplification and summarization features to allow for vocalization of processed content.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
