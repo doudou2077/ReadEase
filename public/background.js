@@ -346,16 +346,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     return;
                 }
 
-                let basePrompt = `Please provide a comprehensive summary following these guidelines:
-                                        Who is involved?
-                                        What is happening?
-                                        When did it take place?
-                                        Where does it occur?
-                                        Why is it important or happening?
-                                        How does it unfold or work?
-                                        
-                                        If certain details are not provided in the content, exclude them naturally without adding assumptions. 
-                                        Ensure the summary remains clear, concise, and faithful to the original content.`;
+                let basePrompt = `As an advanced AI with expertise in language comprehension and summarization, 
+                your assignment is to analyze the text below or the url and distill it into a succinct abstract paragraph. 
+                Your summary should encapsulate the most critical points, 
+                offering a coherent and easily understandable synopsis that allows one to grasp the crux of the matter without having to peruse the entire text. 
+                Exclude any irrelevant details or off-topic points. Furnish only the output, free of superfluous information or quotation marks. or formatting.
+                Use bullet points for clarity and readability on key aspects with headings.`;
 
                 let summarizePrompt;
 
