@@ -492,10 +492,15 @@ const updateSimplificationLevel = (level: number) => {
   });
 };
 
-// Function to update simplification level
+// Function to update font size
 const updateFontSize = (size: number) => {
   chrome.storage.local.set({ fontSize: size }, () => {
     console.log('Font size set to:', size);
+    // Update all messages with the new font size
+    const messages = chatContainer.querySelectorAll('.message');
+    messages.forEach((messageDiv) => {
+      (messageDiv as HTMLElement).style.fontSize = `${size}px`; // Apply the new font size
+    });
   });
 };
 
