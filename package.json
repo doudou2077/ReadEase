@@ -9,6 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "text-readability": "^1.1.0"
