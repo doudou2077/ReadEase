@@ -71,8 +71,9 @@ interface Message {
   };
   currentLevel?: GradeLevel;
   remainingLevels?: number;
-  type?: string; // Add the 'type' property
-  //fontSize: number // Add the font size property
+  type?: string;
+  //fontSize: number 
+  action?: string;
 }
 
 // Add this function before the message listener
@@ -93,6 +94,11 @@ chrome.runtime.onMessage.addListener((message: Message) => {
     currentLevel: message.currentLevel,
     remainingLevels: message.remainingLevels
   });
+
+  if (message.action === "showLoading") {
+    addLoadingMessage();
+    return;
+  }
 
   if (message.target === "sidepanel") {
     if (message.error) {
@@ -606,30 +612,30 @@ const createSettingsModal = () => {
   fontSize.textContent = "Font Size";
   modal.appendChild(fontSize);
 
-   // Create a dropdown for simplification levels
-   const selectFontSize = document.createElement("select");
-   const sizes = [
-     { value: "14", label: "14" },
-     { value: "16", label: "16" },
-     { value: "18", label: "18" },
-     { value: "20", label: "20" },
-     { value: "22", label: "22" },
-     { value: "24", label: "24" }
-   ];
- 
-   for (const size of sizes) {
-     const option = document.createElement("option");
-     option.value = size.value;
-     option.textContent = size.label;
-     selectFontSize.appendChild(option);
-   }
- 
-   // Add styles to align dropdown and button
-   selectFontSize.style.display = "inline-block";
-   selectFontSize.style.marginRight = "10px";
-   selectFontSize.style.width = "180px"; // Make dropdown wider to fit the text
- 
-   modal.appendChild(selectFontSize);
+  // Create a dropdown for simplification levels
+  const selectFontSize = document.createElement("select");
+  const sizes = [
+    { value: "14", label: "14" },
+    { value: "16", label: "16" },
+    { value: "18", label: "18" },
+    { value: "20", label: "20" },
+    { value: "22", label: "22" },
+    { value: "24", label: "24" }
+  ];
+
+  for (const size of sizes) {
+    const option = document.createElement("option");
+    option.value = size.value;
+    option.textContent = size.label;
+    selectFontSize.appendChild(option);
+  }
+
+  // Add styles to align dropdown and button
+  selectFontSize.style.display = "inline-block";
+  selectFontSize.style.marginRight = "10px";
+  selectFontSize.style.width = "180px"; // Make dropdown wider to fit the text
+
+  modal.appendChild(selectFontSize);
 
   // Retrieve font size from local storage
   chrome.storage.local.get(['fontSize'], (result) => {
