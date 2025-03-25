@@ -1,4 +1,6 @@
 import textReadability from 'text-readability';
+import { textToSpeech } from './tts.js'
+
 
 const style = document.createElement('style');
 style.textContent = `
@@ -186,6 +188,7 @@ const createModal = (selectedText) => {
   textToSpeechButton.addEventListener("click", () => {
     if (isTextCurrentlySelected()) {
       console.log("Text-to-Speech button clicked");
+      textToSpeech(lastSelectedText)
       chrome.runtime.sendMessage({
         action: "openSidePanel",
         feature: "tts",
