@@ -138,6 +138,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
             })
             .then(async () => {
+                // Show loading spinner first
+                chrome.runtime.sendMessage({
+                    target: "sidepanel",
+                    action: "showLoading"
+                });
                 let promptTemplate;
                 let currentLevel;
                 let getSimplificationLevelAndPrompt;
