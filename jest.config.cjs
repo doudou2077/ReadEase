@@ -1,4 +1,4 @@
-export default {
+module.exports = {
     testEnvironment: 'jsdom',
     setupFiles: ['./readease/test/setup.js'],
     transform: {

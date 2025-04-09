@@ -2,7 +2,7 @@ import { generateContent } from './api.js';
 import { GRADE_LEVELS, SIMPLIFICATION_PROMPTS } from './gradeConfig.js';
 
 // Function to update simplification level
-const updateSimplificationLevel = (level) => {
+export const updateSimplificationLevel = (level) => {
     chrome.storage.local.set({ simplificationLevel: level }, () => {
         console.log('Simplification level set to:', level);
     });
