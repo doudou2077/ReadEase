@@ -34,15 +34,29 @@ style.textContent = `
 document.head.appendChild(style);
 
 // create a loading message
-const addLoadingMessage = () => {
+// Update the addLoadingMessage function to accept a feature parameter
+const addLoadingMessage = (feature = 'simplify') => {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message assistant-message loading-message';
 
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
 
+  // Add different colors based on feature
+  if (feature === 'summarize') {
+    spinner.style.borderTop = '3px solid #3498db';
+  } else if (feature === 'simplify') {
+    spinner.style.borderTop = '3px solid #3498db';
+  } else if (feature === 'tts') {
+    spinner.style.borderTop = '3px solid #3498db';
+  }
+
   const text = document.createElement('span');
-  text.textContent = 'Processing your request...';
+  text.textContent = feature === 'summarize'
+    ? 'Summarizing your content...'
+    : feature === 'tts'
+      ? 'Preparing audio...'
+      : 'Processing your request...';
 
   messageDiv.appendChild(spinner);
   messageDiv.appendChild(text);
@@ -88,63 +102,71 @@ const getDomainName = (url: string): string => {
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message: Message) => {
-  console.log("Sidepanel received message:", {
-    message,
-    hasError: !!message.error,
-    currentLevel: message.currentLevel,
-    remainingLevels: message.remainingLevels
-  });
+  console.log("Sidepanel received message:", message);
 
   if (message.action === "showLoading") {
-    addLoadingMessage();
+    console.log("LOADING MESSAGE RECEIVED with feature:", message.feature);
+    addLoadingMessage(message.feature);
     return;
   }
 
+  // Only handle messages targeted to sidepanel
   if (message.target === "sidepanel") {
+    // Remove any loading messages
+    const loadingMessages = document.querySelectorAll('.loading-message');
+    loadingMessages.forEach(msg => msg.remove());
+
     if (message.error) {
-      const loadingMessages = document.querySelectorAll('.loading-message');
-      loadingMessages.forEach(msg => msg.remove());
-
-      console.log("Handling error case:", {
-        error: message.error,
-        currentLevel: message.currentLevel,
-        remainingLevels: message.remainingLevels
-      });
-
-      // Create a more user-friendly error message for the simplest level case
+      // Handle error case
       if (message.error === "Text is already at the simplest level") {
         addMessage(
-          message.text, // Keep the original text
+          message.text,
           false,
           GRADE_LEVELS.BELOW_KINDERGARTEN,
-          true, // Force disable the button
+          true,
         );
       } else {
         addMessage(`Error: ${message.error}`, false);
       }
     } else if (message.response) {
-      const loadingMessages = document.querySelectorAll('.loading-message');
-      loadingMessages.forEach(msg => msg.remove());
 
-      console.log("Handling response case:", {
-        currentLevel: message.currentLevel,
-        remainingLevels: message.remainingLevels,
-        type: message.type
-      });
+      if (message.feature === "summarize" && message.action === "updateWithReadability") {
+        // Handle the readability update for summarization
+        console.log("Displaying summary with readability:", message.response);
 
-      // If it's a URL summary, add a prefix to the response with bold title and hyperlink
-      const displayResponse = message.feature === "summarize" && message.type === "url"
-        ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
-        : message.feature === "summarize"
-          ? `**Summary**\n\n${message.response}`
-          : message.response;
+        const displayResponse = message.type === "url"
+          ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
+          : `**Summary**\n\n${message.response}`;
 
-      addMessage(
-        displayResponse,
-        false,
-        message.currentLevel || message.readability?.readingLevel,
-        message.remainingLevels === 0
-      );
+        addMessage(
+          displayResponse,
+          false,
+          message.readability?.readingLevel,
+          false // Not at simplest level yet
+        );
+      } else if (message.feature === "summarize") {
+        console.log("Displaying summary:", message.response);
+
+        const displayResponse = message.type === "url"
+          ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
+          : `**Summary**\n\n${message.response}`;
+
+        addMessage(
+          displayResponse,
+          false,
+          message.readability?.readingLevel,
+          false // Not at simplest level yet
+        );
+      }
+      // For simplify feature, handle as before
+      else if (message.feature === "simplify") {
+        addMessage(
+          message.response,
+          false,
+          message.currentLevel,
+          message.remainingLevels === 0
+        );
+      }
     }
   }
 });
@@ -249,8 +271,6 @@ const addMessage = (
 
         // Add loading message
         const loadingMessage = addLoadingMessage();
-
-
 
 
         chrome.storage.local.get([HIDE_SETTINGS_PROMPT_KEY], (result) => {
