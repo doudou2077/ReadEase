@@ -36,6 +36,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("Available grade levels:", Object.values(GRADE_LEVELS));
         console.log("Looking for level:", message.currentLevel);
 
+        // Split text into bullet points if it contains them
+        const lines = message.text.split('\n');
+        const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
+        const isInBulletFormat = bulletPoints.length > 0;
+
+        let prompt;
+        if (isInBulletFormat) {
+            // Create a prompt that maintains bullet point format
+            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
+            prompt = `${promptTemplate}
+            Please simplify each bullet point while maintaining the exact same format. Keep the structure with "*" bullet points but use simpler language for each point:
+            ${message.text}
+            Response format:
+            Summary
+            [Heading]
+            * Simplified point 1
+            * Simplified point 2
+            etc.`;
+        } else {
+            // Use regular prompt for non-bullet point text
+            prompt = SIMPLIFICATION_PROMPTS[message.currentLevel].replace('{{text}}', message.text);
+        }
+
+        console.log("Using prompt:", prompt);
+
         // Validate input
         if (!message.text || !message.currentLevel) {
             console.error("Invalid message format:", message);
@@ -141,7 +166,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // Show loading spinner first
                 chrome.runtime.sendMessage({
                     target: "sidepanel",
-                    action: "showLoading"
+                    action: "showLoading",
+                    feature: message.feature
                 });
                 let promptTemplate;
                 let currentLevel;
@@ -310,7 +336,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
             });
     }
-    if (message && message.feature === "summarize") {
+    if (message.action === "openSidePanel" && message.feature === "summarize") {
         console.log("=== Background summarize Handler ===");
         console.log("Message received:", message);
         if (message.isUrl) {
@@ -372,35 +398,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.log("=== Calling API for Summarization ===");
                 generateContent(summarizePrompt)
                     .then(response => {
-                        console.log("=== Summarize API Response ===");
-                        console.log("Raw response:", response);
-
-                        // Send the summary to the sidepanel
-                        return chrome.runtime.sendMessage({
-                            target: "sidepanel",
-                            feature: "summarize",
-                            text: message.text,
-                            response: response,
-                            type: message.isUrl ? "url" : "text"
-                        }, () => {
-                            if (chrome.runtime.lastError) {
-                                console.error("Runtime error:", chrome.runtime.lastError);
-                            } else {
-                                console.log("Summary sent successfully to sidepanel");
-                            }
+                        // Send to content script for readability calculation
+                        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                            chrome.tabs.sendMessage(tabs[0].id, {
+                                action: "calculateReadabilityAndSendToSidepanel",
+                                text: response,
+                                originalText: message.text,
+                                isUrl: message.isUrl,
+                                type: message.isUrl ? "url" : "text"
+                            });
                         });
                     })
                     .catch(error => {
                         console.error("Error in summarization API call:", error);
-                        // Send error to sidepanel
                         return chrome.runtime.sendMessage({
                             target: "sidepanel",
                             feature: "summarize",
                             error: error.message
-                        }, () => {
-                            if (chrome.runtime.lastError) {
-                                console.error("Runtime error when sending error:", chrome.runtime.lastError);
-                            }
                         });
                     });
             });

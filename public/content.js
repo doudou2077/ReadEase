@@ -64,6 +64,47 @@ const isTextCurrentlySelected = () => {
   return currentText === lastSelectedText && currentText.length > 0;
 };
 
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "calculateReadability") {
+    const gradeLevel = textReadability.fleschKincaidGrade(message.text);
+    const readingLevel = getReadingLevelDescription(gradeLevel);
+    sendResponse({
+      readability: {
+        gradeLevel: gradeLevel,
+        readingLevel: readingLevel
+      }
+    });
+    return true;
+  }
+  if (message.action === "calculateReadabilityAndSendToSidepanel") {
+    const gradeLevel = textReadability.fleschKincaidGrade(message.text);
+    const readingLevel = getReadingLevelDescription(gradeLevel);
+
+    // Send directly to sidepanel with readability info
+    chrome.runtime.sendMessage({
+      target: "sidepanel",
+      feature: "summarize",
+      action: "updateWithReadability",
+      text: message.originalText,
+      response: message.text,
+      type: message.isUrl ? "url" : "text",
+      readability: {
+        gradeLevel: gradeLevel,
+        readingLevel: readingLevel
+      }
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Runtime error:", chrome.runtime.lastError);
+      } else {
+        console.log("Summary with readability sent successfully to sidepanel");
+      }
+    });
+    return true;
+  }
+
+});
+
 // Add a selection change listener
 document.addEventListener('selectionchange', () => {
   const selection = window.getSelection();
@@ -159,10 +200,26 @@ const createModal = (selectedText) => {
   summarizeButton.addEventListener("click", () => {
     if (isTextCurrentlySelected()) {
       console.log("Summarize button clicked");
+      // Calculate readability level for the selected text
+      const gradeLevel = textReadability.fleschKincaidGrade(lastSelectedText);
+      const readingLevel = getReadingLevelDescription(gradeLevel);
+
+      // Add loading message to sidepanel first
+      console.log("Sending showLoading message with feature:", "summarize");
+      chrome.runtime.sendMessage({
+        target: "sidepanel",
+        action: "showLoading",
+        feature: "summarize"
+      });
+
       chrome.runtime.sendMessage({
         action: "openSidePanel",
         feature: "summarize",
-        text: lastSelectedText
+        text: lastSelectedText,
+        readability: {
+          gradeLevel: gradeLevel,
+          readingLevel: readingLevel
+        }
       }, () => {
         chrome.runtime.lastError
           ? console.error("Runtime error:", chrome.runtime.lastError)
@@ -170,6 +227,14 @@ const createModal = (selectedText) => {
         modal.remove();
       });
     } else {
+
+      // Add loading message to sidepanel first
+      chrome.runtime.sendMessage({
+        target: "sidepanel",
+        action: "showLoading",
+        feature: "summarize"
+      });
+
       console.log("No text selected, sending current URL for summarization", window.location.href);
       chrome.runtime.sendMessage({
         action: "openSidePanel",
@@ -263,7 +328,8 @@ const createFloatingButton = () => {
         // Add loading message to sidepanel
         chrome.runtime.sendMessage({
           target: "sidepanel",
-          action: "showLoading"
+          action: "showLoading",
+          feature: "simplify"
         });
 
         chrome.runtime.lastError
