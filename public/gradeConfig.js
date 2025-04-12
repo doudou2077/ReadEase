@@ -4,7 +4,7 @@ export const GRADE_LEVELS = {
     HIGH_SCHOOL: "High School (9-12)",
     MIDDLE_SCHOOL: "Middle School (6-8)",
     ELEMENTARY: "Elementary (1-5)",
-    BELOW_KINDERGARTEN: "Below Kindergarten (K)"
+    BELOW_KINDERGARTEN: "Kindergarten (K)"
 };
 
 

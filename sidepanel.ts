@@ -129,7 +129,6 @@ chrome.runtime.onMessage.addListener((message: Message) => {
         addMessage(`Error: ${message.error}`, false);
       }
     } else if (message.response) {
-
       if (message.feature === "summarize" && message.action === "updateWithReadability") {
         // Handle the readability update for summarization
         console.log("Displaying summary with readability:", message.response);

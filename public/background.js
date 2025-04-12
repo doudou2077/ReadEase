@@ -36,38 +36,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("Available grade levels:", Object.values(GRADE_LEVELS));
         console.log("Looking for level:", message.currentLevel);
 
-        // Split text into bullet points if it contains them
-        const lines = message.text.split('\n');
-        const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
-        const isInBulletFormat = bulletPoints.length > 0;
-
-        let prompt;
-        if (isInBulletFormat) {
-            // Create a prompt that maintains bullet point format
-            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
-            prompt = `${promptTemplate}
-            Please simplify each bullet point while maintaining the exact same format. Keep the structure with "*" bullet points but use simpler language for each point:
-            ${message.text}
-            Response format:
-            Summary
-            [Heading]
-            * Simplified point 1
-            * Simplified point 2
-            etc.`;
-        } else {
-            // Use regular prompt for non-bullet point text
-            prompt = SIMPLIFICATION_PROMPTS[message.currentLevel].replace('{{text}}', message.text);
-        }
-
-        console.log("Using prompt:", prompt);
-
-        // Validate input
-        if (!message.text || !message.currentLevel) {
-            console.error("Invalid message format:", message);
-            sendResponse({ error: "Invalid message format" });
-            return true;
-        }
-
         // Check if already at kindergarten level
         if (message.currentLevel === GRADE_LEVELS.BELOW_KINDERGARTEN ||
             message.currentLevel === "Kindergarten (K)") {
@@ -81,6 +49,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 currentLevel: GRADE_LEVELS.BELOW_KINDERGARTEN,
                 remainingLevels: 0
             });
+            return true;
+        }
+
+        // Split text into bullet points if it contains them
+        const lines = message.text.split('\n');
+        const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
+        const isInBulletFormat = bulletPoints.length > 0;
+
+        let prompt;
+        if (isInBulletFormat) {
+            // Create a prompt that maintains bullet point format
+            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
+            if (!promptTemplate) {
+                console.error("No prompt template found for level:", message.currentLevel);
+                sendResponse({ error: "Invalid grade level" });
+                return true;
+            }
+            prompt = `${promptTemplate}
+            Please simplify each bullet point while maintaining the exact same format. Keep the structure with "*" bullet points but use simpler language for each point:
+            ${message.text}
+            Response format:
+            Summary
+            [Heading]
+            * Simplified point 1
+            * Simplified point 2
+            etc.`;
+        } else {
+            // Use regular prompt for non-bullet point text
+            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
+            if (!promptTemplate) {
+                console.error("No prompt template found for level:", message.currentLevel);
+                sendResponse({ error: "Invalid grade level" });
+                return true;
+            }
+            prompt = promptTemplate.replace('{{text}}', message.text);
+        }
+
+        console.log("Using prompt:", prompt);
+
+        // Validate input
+        if (!message.text || !message.currentLevel) {
+            console.error("Invalid message format:", message);
+            sendResponse({ error: "Invalid message format" });
             return true;
         }
 
@@ -452,13 +463,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     .then(response => {
                         // Send to content script for readability calculation
                         chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                            chrome.tabs.sendMessage(tabs[0].id, {
-                                action: "calculateReadabilityAndSendToSidepanel",
-                                text: response,
-                                originalText: message.text,
-                                isUrl: message.isUrl,
-                                type: message.isUrl ? "url" : "text"
-                            });
+                            if (!tabs || tabs.length === 0) {
+                                console.error("No active tabs found");
+                                // Send response directly to sidepanel if no active tab is found
+                                chrome.runtime.sendMessage({
+                                    target: "sidepanel",
+                                    feature: "summarize",
+                                    text: message.text,
+                                    response: response,
+                                    type: message.isUrl ? "url" : "text"
+                                });
+                                return;
+                            }
+                            
+                            try {
+                                chrome.tabs.sendMessage(tabs[0].id, {
+                                    action: "calculateReadabilityAndSendToSidepanel",
+                                    text: response,
+                                    originalText: message.text,
+                                    isUrl: message.isUrl,
+                                    type: message.isUrl ? "url" : "text"
+                                }, (callbackResponse) => {
+                                    // Check if there was an error sending the message
+                                    if (chrome.runtime.lastError) {
+                                        console.error("Error sending message to content script:", chrome.runtime.lastError);
+                                        // Send response directly to sidepanel if content script is not available
+                                        chrome.runtime.sendMessage({
+                                            target: "sidepanel",
+                                            feature: "summarize",
+                                            text: message.text,
+                                            response: response,
+                                            type: message.isUrl ? "url" : "text"
+                                        });
+                                    }
+                                });
+                            } catch (error) {
+                                console.error("Error in content script communication:", error);
+                                // Send response directly to sidepanel if there's an error
+                                chrome.runtime.sendMessage({
+                                    target: "sidepanel",
+                                    feature: "summarize",
+                                    text: message.text,
+                                    response: response,
+                                    type: message.isUrl ? "url" : "text"
+                                });
+                            }
                         });
                     })
                     .catch(error => {
