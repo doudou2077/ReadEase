@@ -104,7 +104,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 // Parse the response
                 const lines = response.split('\n');
-                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                console.log("Split lines:", lines);
+
+                // Find the line that starts with 'Simplified text:'
+                const simplifiedTextStartIndex = lines.findIndex(l => l.startsWith('Simplified text:'));
+                
+                // Extract all text after 'Simplified text:' until the next section
+                let simplifiedText = '';
+                if (simplifiedTextStartIndex !== -1) {
+                    // Get the first line after removing the 'Simplified text:' prefix
+                    simplifiedText = lines[simplifiedTextStartIndex].replace('Simplified text:', '').trim();
+                    
+                    // Add all subsequent lines until we hit another section or end of response
+                    for (let i = simplifiedTextStartIndex + 1; i < lines.length; i++) {
+                        // Stop if we hit another section header
+                        if (lines[i].startsWith('Current Grade Level:') || 
+                            lines[i].includes('Remaining simplification levels:')) {
+                            break;
+                        }
+                        // Add the line to the simplified text
+                        simplifiedText += '\n' + lines[i].trim();
+                    }
+                }
+                
+                // Clean up any remaining "Current Grade Level" or "Remaining simplification levels" text
+                simplifiedText = simplifiedText.replace(/Current Grade Level:.*$/gm, '');
+                simplifiedText = simplifiedText.replace(/Remaining simplification levels:.*$/gm, '');
+                simplifiedText = simplifiedText.trim();
+                
                 const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
                 const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
 
@@ -287,7 +314,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 const lines = response.split('\n');
                                 console.log("Split lines:", lines);
 
-                                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                                // Find the line that starts with 'Simplified text:'
+                                const simplifiedTextStartIndex = lines.findIndex(l => l.startsWith('Simplified text:'));
+                                
+                                // Extract all text after 'Simplified text:' until the next section
+                                let simplifiedText = '';
+                                if (simplifiedTextStartIndex !== -1) {
+                                    // Get the first line after removing the 'Simplified text:' prefix
+                                    simplifiedText = lines[simplifiedTextStartIndex].replace('Simplified text:', '').trim();
+                                    
+                                    // Add all subsequent lines until we hit another section or end of response
+                                    for (let i = simplifiedTextStartIndex + 1; i < lines.length; i++) {
+                                        // Stop if we hit another section header
+                                        if (lines[i].startsWith('Current Grade Level:') || 
+                                            lines[i].includes('Remaining simplification levels:')) {
+                                            break;
+                                        }
+                                        // Add the line to the simplified text
+                                        simplifiedText += '\n' + lines[i].trim();
+                                    }
+                                }
+                                
+                                // Clean up any remaining "Current Grade Level" or "Remaining simplification levels" text
+                                simplifiedText = simplifiedText.replace(/Current Grade Level:.*$/gm, '');
+                                simplifiedText = simplifiedText.replace(/Remaining simplification levels:.*$/gm, '');
+                                simplifiedText = simplifiedText.trim();
+                                
                                 const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
                                 const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
 
