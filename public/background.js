@@ -36,13 +36,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("Available grade levels:", Object.values(GRADE_LEVELS));
         console.log("Looking for level:", message.currentLevel);
 
-        // Validate input
-        if (!message.text || !message.currentLevel) {
-            console.error("Invalid message format:", message);
-            sendResponse({ error: "Invalid message format" });
-            return true;
-        }
-
         // Check if already at kindergarten level
         if (message.currentLevel === GRADE_LEVELS.BELOW_KINDERGARTEN ||
             message.currentLevel === "Kindergarten (K)") {
@@ -56,6 +49,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 currentLevel: GRADE_LEVELS.BELOW_KINDERGARTEN,
                 remainingLevels: 0
             });
+            return true;
+        }
+
+        // Split text into bullet points if it contains them
+        const lines = message.text.split('\n');
+        const bulletPoints = lines.filter(line => line.trim().startsWith('*'));
+        const isInBulletFormat = bulletPoints.length > 0;
+
+        let prompt;
+        if (isInBulletFormat) {
+            // Create a prompt that maintains bullet point format
+            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
+            if (!promptTemplate) {
+                console.error("No prompt template found for level:", message.currentLevel);
+                sendResponse({ error: "Invalid grade level" });
+                return true;
+            }
+            prompt = `${promptTemplate}
+            Please simplify each bullet point while maintaining the exact same format. Keep the structure with "*" bullet points but use simpler language for each point:
+            ${message.text}
+            Response format:
+            Summary
+            [Heading]
+            * Simplified point 1
+            * Simplified point 2
+            etc.`;
+        } else {
+            // Use regular prompt for non-bullet point text
+            const promptTemplate = SIMPLIFICATION_PROMPTS[message.currentLevel];
+            if (!promptTemplate) {
+                console.error("No prompt template found for level:", message.currentLevel);
+                sendResponse({ error: "Invalid grade level" });
+                return true;
+            }
+            prompt = promptTemplate.replace('{{text}}', message.text);
+        }
+
+        console.log("Using prompt:", prompt);
+
+        // Validate input
+        if (!message.text || !message.currentLevel) {
+            console.error("Invalid message format:", message);
+            sendResponse({ error: "Invalid message format" });
             return true;
         }
 
@@ -79,7 +115,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                 // Parse the response
                 const lines = response.split('\n');
-                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                console.log("Split lines:", lines);
+
+                // Find the line that starts with 'Simplified text:'
+                const simplifiedTextStartIndex = lines.findIndex(l => l.startsWith('Simplified text:'));
+                
+                // Extract all text after 'Simplified text:' until the next section
+                let simplifiedText = '';
+                if (simplifiedTextStartIndex !== -1) {
+                    // Get the first line after removing the 'Simplified text:' prefix
+                    simplifiedText = lines[simplifiedTextStartIndex].replace('Simplified text:', '').trim();
+                    
+                    // Add all subsequent lines until we hit another section or end of response
+                    for (let i = simplifiedTextStartIndex + 1; i < lines.length; i++) {
+                        // Stop if we hit another section header
+                        if (lines[i].startsWith('Current Grade Level:') || 
+                            lines[i].includes('Remaining simplification levels:')) {
+                            break;
+                        }
+                        // Add the line to the simplified text
+                        simplifiedText += '\n' + lines[i].trim();
+                    }
+                }
+                
+                // Clean up any remaining "Current Grade Level" or "Remaining simplification levels" text
+                simplifiedText = simplifiedText.replace(/Current Grade Level:.*$/gm, '');
+                simplifiedText = simplifiedText.replace(/Remaining simplification levels:.*$/gm, '');
+                simplifiedText = simplifiedText.trim();
+                
                 const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
                 const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
 
@@ -141,7 +204,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // Show loading spinner first
                 chrome.runtime.sendMessage({
                     target: "sidepanel",
-                    action: "showLoading"
+                    action: "showLoading",
+                    feature: message.feature
                 });
                 let promptTemplate;
                 let currentLevel;
@@ -261,7 +325,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 const lines = response.split('\n');
                                 console.log("Split lines:", lines);
 
-                                const simplifiedText = lines.find(l => l.startsWith('Simplified text:'))?.replace('Simplified text:', '').trim();
+                                // Find the line that starts with 'Simplified text:'
+                                const simplifiedTextStartIndex = lines.findIndex(l => l.startsWith('Simplified text:'));
+                                
+                                // Extract all text after 'Simplified text:' until the next section
+                                let simplifiedText = '';
+                                if (simplifiedTextStartIndex !== -1) {
+                                    // Get the first line after removing the 'Simplified text:' prefix
+                                    simplifiedText = lines[simplifiedTextStartIndex].replace('Simplified text:', '').trim();
+                                    
+                                    // Add all subsequent lines until we hit another section or end of response
+                                    for (let i = simplifiedTextStartIndex + 1; i < lines.length; i++) {
+                                        // Stop if we hit another section header
+                                        if (lines[i].startsWith('Current Grade Level:') || 
+                                            lines[i].includes('Remaining simplification levels:')) {
+                                            break;
+                                        }
+                                        // Add the line to the simplified text
+                                        simplifiedText += '\n' + lines[i].trim();
+                                    }
+                                }
+                                
+                                // Clean up any remaining "Current Grade Level" or "Remaining simplification levels" text
+                                simplifiedText = simplifiedText.replace(/Current Grade Level:.*$/gm, '');
+                                simplifiedText = simplifiedText.replace(/Remaining simplification levels:.*$/gm, '');
+                                simplifiedText = simplifiedText.trim();
+                                
                                 const currentLevel = lines.find(l => l.startsWith('Current Grade Level:'))?.split('.')[0].replace('Current Grade Level:', '').trim();
                                 const remainingLevels = parseInt(lines.find(l => l.includes('Remaining simplification levels:'))?.split(':')[1].trim());
 
@@ -310,7 +399,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
             });
     }
-    if (message && message.feature === "summarize") {
+    if (message.action === "openSidePanel" && message.feature === "summarize") {
         console.log("=== Background summarize Handler ===");
         console.log("Message received:", message);
         if (message.isUrl) {
@@ -372,35 +461,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 console.log("=== Calling API for Summarization ===");
                 generateContent(summarizePrompt)
                     .then(response => {
-                        console.log("=== Summarize API Response ===");
-                        console.log("Raw response:", response);
-
-                        // Send the summary to the sidepanel
-                        return chrome.runtime.sendMessage({
-                            target: "sidepanel",
-                            feature: "summarize",
-                            text: message.text,
-                            response: response,
-                            type: message.isUrl ? "url" : "text"
-                        }, () => {
-                            if (chrome.runtime.lastError) {
-                                console.error("Runtime error:", chrome.runtime.lastError);
-                            } else {
-                                console.log("Summary sent successfully to sidepanel");
+                        // Send to content script for readability calculation
+                        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                            if (!tabs || tabs.length === 0) {
+                                console.error("No active tabs found");
+                                // Send response directly to sidepanel if no active tab is found
+                                chrome.runtime.sendMessage({
+                                    target: "sidepanel",
+                                    feature: "summarize",
+                                    text: message.text,
+                                    response: response,
+                                    type: message.isUrl ? "url" : "text"
+                                });
+                                return;
+                            }
+                            
+                            try {
+                                chrome.tabs.sendMessage(tabs[0].id, {
+                                    action: "calculateReadabilityAndSendToSidepanel",
+                                    text: response,
+                                    originalText: message.text,
+                                    isUrl: message.isUrl,
+                                    type: message.isUrl ? "url" : "text"
+                                }, (callbackResponse) => {
+                                    // Check if there was an error sending the message
+                                    if (chrome.runtime.lastError) {
+                                        console.error("Error sending message to content script:", chrome.runtime.lastError);
+                                        // Send response directly to sidepanel if content script is not available
+                                        chrome.runtime.sendMessage({
+                                            target: "sidepanel",
+                                            feature: "summarize",
+                                            text: message.text,
+                                            response: response,
+                                            type: message.isUrl ? "url" : "text"
+                                        });
+                                    }
+                                });
+                            } catch (error) {
+                                console.error("Error in content script communication:", error);
+                                // Send response directly to sidepanel if there's an error
+                                chrome.runtime.sendMessage({
+                                    target: "sidepanel",
+                                    feature: "summarize",
+                                    text: message.text,
+                                    response: response,
+                                    type: message.isUrl ? "url" : "text"
+                                });
                             }
                         });
                     })
                     .catch(error => {
                         console.error("Error in summarization API call:", error);
-                        // Send error to sidepanel
                         return chrome.runtime.sendMessage({
                             target: "sidepanel",
                             feature: "summarize",
                             error: error.message
-                        }, () => {
-                            if (chrome.runtime.lastError) {
-                                console.error("Runtime error when sending error:", chrome.runtime.lastError);
-                            }
                         });
                     });
             });
