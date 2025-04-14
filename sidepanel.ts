@@ -129,7 +129,6 @@ chrome.runtime.onMessage.addListener((message: Message) => {
         addMessage(`Error: ${message.error}`, false);
       }
     } else if (message.response) {
-
       if (message.feature === "summarize" && message.action === "updateWithReadability") {
         // Handle the readability update for summarization
         console.log("Displaying summary with readability:", message.response);
@@ -138,10 +137,13 @@ chrome.runtime.onMessage.addListener((message: Message) => {
           ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
           : `**Summary**\n\n${message.response}`;
 
+        // Set a default grade level for summaries if readability is not available
+        const gradeLevel = message.readability?.readingLevel || GRADE_LEVELS.COLLEGE_GRADUATE;
+        
         addMessage(
           displayResponse,
           false,
-          message.readability?.readingLevel,
+          gradeLevel,
           false // Not at simplest level yet
         );
       } else if (message.feature === "summarize") {
@@ -151,10 +153,13 @@ chrome.runtime.onMessage.addListener((message: Message) => {
           ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
           : `**Summary**\n\n${message.response}`;
 
+        // Set a default grade level for summaries if readability is not available
+        const gradeLevel = message.readability?.readingLevel || GRADE_LEVELS.COLLEGE_GRADUATE;
+
         addMessage(
           displayResponse,
           false,
-          message.readability?.readingLevel,
+          gradeLevel,
           false // Not at simplest level yet
         );
       }
@@ -216,7 +221,10 @@ const addMessage = (
 
   // Store grade level in data attribute
   if (currentGradeLevel) {
+    console.log("Setting grade level attribute:", currentGradeLevel);
     messageDiv.setAttribute('data-grade-level', currentGradeLevel);
+  } else {
+    console.warn("No grade level provided for message");
   }
 
   // Create text container
