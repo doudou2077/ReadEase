@@ -70,8 +70,6 @@ const addLoadingMessage = (feature = 'simplify') => {
 chrome.runtime.sendMessage({ action: "sidepanel_ready" });
 
 const chatContainer = document.getElementById('chat-container') as HTMLDivElement;
-const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
-const sendButton = document.getElementById('send-button') as HTMLButtonElement;
 
 interface Message {
   target: string;
@@ -86,7 +84,6 @@ interface Message {
   currentLevel?: GradeLevel;
   remainingLevels?: number;
   type?: string;
-  //fontSize: number 
   action?: string;
 }
 
@@ -240,7 +237,23 @@ const addMessage = (
   if (!isUser) {
     const simplifyButton = document.createElement('button');
     simplifyButton.className = 'action-button';
-    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span>  Say it differently';
+    simplifyButton.style.display = 'flex';
+    simplifyButton.style.alignItems = 'center';
+    simplifyButton.style.gap = '8px';
+    simplifyButton.innerHTML = `
+      <span class="material-icons simplify-icon">auto_fix_high</span>
+      <span class="simplify-text">Say it differently</span>
+      <span style="color: #ccc; margin: 0 4px;">|</span>
+      <span class="material-icons speaker-icon" style="cursor: pointer;" title="Read aloud">volume_up</span>
+    `;
+
+    // Store the utterance for this message
+    let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+    // Initialize global state if not exists
+    if (!window.currentPlayingMessage) {
+      window.currentPlayingMessage = null;
+    }
 
     console.log("Button state check:", {
       currentGradeLevel,
@@ -266,8 +279,47 @@ const addMessage = (
       simplifyButton.style.backgroundColor = '#cccccc';
     } else {
       simplifyButton.title = 'Say it differently';
-      // Add click handler for simplify button
-      simplifyButton.addEventListener('click', () => {
+      
+      // Add click handler for speaker icon
+      const speakerIcon = simplifyButton.querySelector('.speaker-icon');
+      speakerIcon?.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent the simplify action
+        const textContent = textDiv.textContent || "";
+        if (textContent) {
+          // Stop any currently playing speech
+          if (speechSynthesis.speaking) {
+            speechSynthesis.cancel();
+            // Reset the icon of the previously playing message
+            const previousSpeaker = window.currentPlayingMessage?.querySelector('.speaker-icon');
+            if (previousSpeaker) {
+              previousSpeaker.textContent = 'volume_up';
+            }
+          }
+
+          // Create new utterance
+          currentUtterance = new SpeechSynthesisUtterance(textContent);
+          window.currentPlayingMessage = messageDiv;
+
+          // Handle end of speech
+          currentUtterance.onend = () => {
+            window.currentPlayingMessage = null;
+          };
+
+          // Handle error
+          currentUtterance.onerror = () => {
+            window.currentPlayingMessage = null;
+          };
+
+          // Start speech
+          speechSynthesis.speak(currentUtterance);
+        }
+      });
+
+      // Add click handler for simplify icon and text
+      const simplifyIcon = simplifyButton.querySelector('.simplify-icon');
+      const simplifyText = simplifyButton.querySelector('.simplify-text');
+      
+      const handleSimplify = () => {
         console.log("=== Simplify Button Click Debug ===");
         const currentLevel = messageDiv.getAttribute('data-grade-level');
         const textContent = textDiv.textContent || "";
@@ -426,7 +478,10 @@ const addMessage = (
         });
 
 
-      });
+      };
+
+      simplifyIcon?.addEventListener('click', handleSimplify);
+      simplifyText?.addEventListener('click', handleSimplify);
     }
 
     console.log("Added click listener to button", {
@@ -450,35 +505,6 @@ const addMessage = (
   chatContainer.scrollTop = chatContainer.scrollHeight;
   saveChatHistory();
 };
-
-// Handle sending messages
-const handleSend = () => {
-  const message = messageInput.value.trim();
-  if (message) {
-    addMessage(message, true);
-    messageInput.value = '';
-
-    // Simulate assistant response (replace with actual AI integration)
-    setTimeout(() => {
-      addMessage("I'm a demo assistant. Real AI responses will be implemented soon!", false);
-    }, 1000);
-  }
-};
-
-// Event listeners
-sendButton.addEventListener('click', handleSend);
-messageInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  }
-});
-
-// Auto-resize textarea
-messageInput.addEventListener('input', () => {
-  messageInput.style.height = 'auto';
-  messageInput.style.height = messageInput.scrollHeight + 'px';
-});
 
 // Load chat history on startup
 loadChatHistory();
@@ -728,3 +754,10 @@ const createSettingsModal = () => {
   // Append modal to document body
   document.body.appendChild(modal);
 };
+
+// Add type declaration for the global variable
+declare global {
+  interface Window {
+    currentPlayingMessage: HTMLElement | null;
+  }
+}
