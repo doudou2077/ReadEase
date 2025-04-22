@@ -5,8 +5,11 @@ A browser extension to help with reading comprehension by providing text simplif
 ## Features
 
 - **Text Simplification**: Simplifies complex text to make it easier to understand
+Demo: https://drive.google.com/file/d/1GxyP77OCwwnpy22LYVOCUzo5orfFi3zi/view
 - **Text Summarization**: Creates concise summaries of longer texts
+Demo: https://drive.google.com/file/d/1bxHu-v_JavNgZKgWnW802dd4TqpceAg4/view
 - **Text-to-Speech**: Reads selected text aloud
+Demo: https://drive.google.com/file/d/1VaaBIQHiS4pT648PGb2RS_RJybAYct_e/view
 
 ## Development
 
