@@ -34,15 +34,29 @@ style.textContent = `
 document.head.appendChild(style);
 
 // create a loading message
-const addLoadingMessage = () => {
+// Update the addLoadingMessage function to accept a feature parameter
+const addLoadingMessage = (feature = 'simplify') => {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message assistant-message loading-message';
 
   const spinner = document.createElement('div');
   spinner.className = 'loading-spinner';
 
+  // Add different colors based on feature
+  if (feature === 'summarize') {
+    spinner.style.borderTop = '3px solid #3498db';
+  } else if (feature === 'simplify') {
+    spinner.style.borderTop = '3px solid #3498db';
+  } else if (feature === 'tts') {
+    spinner.style.borderTop = '3px solid #3498db';
+  }
+
   const text = document.createElement('span');
-  text.textContent = 'Processing your request...';
+  text.textContent = feature === 'summarize'
+    ? 'Summarizing your content...'
+    : feature === 'tts'
+      ? 'Preparing audio...'
+      : 'Processing your request...';
 
   messageDiv.appendChild(spinner);
   messageDiv.appendChild(text);
@@ -56,8 +70,6 @@ const addLoadingMessage = () => {
 chrome.runtime.sendMessage({ action: "sidepanel_ready" });
 
 const chatContainer = document.getElementById('chat-container') as HTMLDivElement;
-const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
-const sendButton = document.getElementById('send-button') as HTMLButtonElement;
 
 interface Message {
   target: string;
@@ -72,7 +84,6 @@ interface Message {
   currentLevel?: GradeLevel;
   remainingLevels?: number;
   type?: string;
-  //fontSize: number 
   action?: string;
 }
 
@@ -88,63 +99,76 @@ const getDomainName = (url: string): string => {
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message: Message) => {
-  console.log("Sidepanel received message:", {
-    message,
-    hasError: !!message.error,
-    currentLevel: message.currentLevel,
-    remainingLevels: message.remainingLevels
-  });
+  console.log("Sidepanel received message:", message);
 
   if (message.action === "showLoading") {
-    addLoadingMessage();
+    console.log("LOADING MESSAGE RECEIVED with feature:", message.feature);
+    addLoadingMessage(message.feature);
     return;
   }
 
+  // Only handle messages targeted to sidepanel
   if (message.target === "sidepanel") {
+    // Remove any loading messages
+    const loadingMessages = document.querySelectorAll('.loading-message');
+    loadingMessages.forEach(msg => msg.remove());
+
     if (message.error) {
-      const loadingMessages = document.querySelectorAll('.loading-message');
-      loadingMessages.forEach(msg => msg.remove());
-
-      console.log("Handling error case:", {
-        error: message.error,
-        currentLevel: message.currentLevel,
-        remainingLevels: message.remainingLevels
-      });
-
-      // Create a more user-friendly error message for the simplest level case
+      // Handle error case
       if (message.error === "Text is already at the simplest level") {
         addMessage(
-          message.text, // Keep the original text
+          message.text,
           false,
           GRADE_LEVELS.BELOW_KINDERGARTEN,
-          true, // Force disable the button
+          true,
         );
       } else {
         addMessage(`Error: ${message.error}`, false);
       }
     } else if (message.response) {
-      const loadingMessages = document.querySelectorAll('.loading-message');
-      loadingMessages.forEach(msg => msg.remove());
+      if (message.feature === "summarize" && message.action === "updateWithReadability") {
+        // Handle the readability update for summarization
+        console.log("Displaying summary with readability:", message.response);
 
-      console.log("Handling response case:", {
-        currentLevel: message.currentLevel,
-        remainingLevels: message.remainingLevels,
-        type: message.type
-      });
+        const displayResponse = message.type === "url"
+          ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
+          : `**Summary**\n\n${message.response}`;
 
-      // If it's a URL summary, add a prefix to the response with bold title and hyperlink
-      const displayResponse = message.feature === "summarize" && message.type === "url"
-        ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
-        : message.feature === "summarize"
-          ? `**Summary**\n\n${message.response}`
-          : message.response;
+        // Set a default grade level for summaries if readability is not available
+        const gradeLevel = message.readability?.readingLevel || GRADE_LEVELS.COLLEGE_GRADUATE;
+        
+        addMessage(
+          displayResponse,
+          false,
+          gradeLevel,
+          false // Not at simplest level yet
+        );
+      } else if (message.feature === "summarize") {
+        console.log("Displaying summary:", message.response);
 
-      addMessage(
-        displayResponse,
-        false,
-        message.currentLevel || message.readability?.readingLevel,
-        message.remainingLevels === 0
-      );
+        const displayResponse = message.type === "url"
+          ? `**Summary of <a href="${message.text}" target="_blank">${getDomainName(message.text)}</a>**\n\n${message.response}`
+          : `**Summary**\n\n${message.response}`;
+
+        // Set a default grade level for summaries if readability is not available
+        const gradeLevel = message.readability?.readingLevel || GRADE_LEVELS.COLLEGE_GRADUATE;
+
+        addMessage(
+          displayResponse,
+          false,
+          gradeLevel,
+          false // Not at simplest level yet
+        );
+      }
+      // For simplify feature, handle as before
+      else if (message.feature === "simplify") {
+        addMessage(
+          message.response,
+          false,
+          message.currentLevel,
+          message.remainingLevels === 0
+        );
+      }
     }
   }
 });
@@ -194,7 +218,10 @@ const addMessage = (
 
   // Store grade level in data attribute
   if (currentGradeLevel) {
+    console.log("Setting grade level attribute:", currentGradeLevel);
     messageDiv.setAttribute('data-grade-level', currentGradeLevel);
+  } else {
+    console.warn("No grade level provided for message");
   }
 
   // Create text container
@@ -210,7 +237,23 @@ const addMessage = (
   if (!isUser) {
     const simplifyButton = document.createElement('button');
     simplifyButton.className = 'action-button';
-    simplifyButton.innerHTML = '<span class="material-icons">auto_fix_high</span>  Say it differently';
+    simplifyButton.style.display = 'flex';
+    simplifyButton.style.alignItems = 'center';
+    simplifyButton.style.gap = '8px';
+    simplifyButton.innerHTML = `
+      <span class="material-icons simplify-icon">auto_fix_high</span>
+      <span class="simplify-text">Say it differently</span>
+      <span style="color: #ccc; margin: 0 4px;">|</span>
+      <span class="material-icons speaker-icon" style="cursor: pointer;" title="Read aloud">volume_up</span>
+    `;
+
+    // Store the utterance for this message
+    let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+    // Initialize global state if not exists
+    if (!window.currentPlayingMessage) {
+      window.currentPlayingMessage = null;
+    }
 
     console.log("Button state check:", {
       currentGradeLevel,
@@ -236,8 +279,47 @@ const addMessage = (
       simplifyButton.style.backgroundColor = '#cccccc';
     } else {
       simplifyButton.title = 'Say it differently';
-      // Add click handler for simplify button
-      simplifyButton.addEventListener('click', () => {
+      
+      // Add click handler for speaker icon
+      const speakerIcon = simplifyButton.querySelector('.speaker-icon');
+      speakerIcon?.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent the simplify action
+        const textContent = textDiv.textContent || "";
+        if (textContent) {
+          // Stop any currently playing speech
+          if (speechSynthesis.speaking) {
+            speechSynthesis.cancel();
+            // Reset the icon of the previously playing message
+            const previousSpeaker = window.currentPlayingMessage?.querySelector('.speaker-icon');
+            if (previousSpeaker) {
+              previousSpeaker.textContent = 'volume_up';
+            }
+          }
+
+          // Create new utterance
+          currentUtterance = new SpeechSynthesisUtterance(textContent);
+          window.currentPlayingMessage = messageDiv;
+
+          // Handle end of speech
+          currentUtterance.onend = () => {
+            window.currentPlayingMessage = null;
+          };
+
+          // Handle error
+          currentUtterance.onerror = () => {
+            window.currentPlayingMessage = null;
+          };
+
+          // Start speech
+          speechSynthesis.speak(currentUtterance);
+        }
+      });
+
+      // Add click handler for simplify icon and text
+      const simplifyIcon = simplifyButton.querySelector('.simplify-icon');
+      const simplifyText = simplifyButton.querySelector('.simplify-text');
+      
+      const handleSimplify = () => {
         console.log("=== Simplify Button Click Debug ===");
         const currentLevel = messageDiv.getAttribute('data-grade-level');
         const textContent = textDiv.textContent || "";
@@ -249,8 +331,6 @@ const addMessage = (
 
         // Add loading message
         const loadingMessage = addLoadingMessage();
-
-
 
 
         chrome.storage.local.get([HIDE_SETTINGS_PROMPT_KEY], (result) => {
@@ -398,7 +478,10 @@ const addMessage = (
         });
 
 
-      });
+      };
+
+      simplifyIcon?.addEventListener('click', handleSimplify);
+      simplifyText?.addEventListener('click', handleSimplify);
     }
 
     console.log("Added click listener to button", {
@@ -422,35 +505,6 @@ const addMessage = (
   chatContainer.scrollTop = chatContainer.scrollHeight;
   saveChatHistory();
 };
-
-// Handle sending messages
-const handleSend = () => {
-  const message = messageInput.value.trim();
-  if (message) {
-    addMessage(message, true);
-    messageInput.value = '';
-
-    // Simulate assistant response (replace with actual AI integration)
-    setTimeout(() => {
-      addMessage("I'm a demo assistant. Real AI responses will be implemented soon!", false);
-    }, 1000);
-  }
-};
-
-// Event listeners
-sendButton.addEventListener('click', handleSend);
-messageInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  }
-});
-
-// Auto-resize textarea
-messageInput.addEventListener('input', () => {
-  messageInput.style.height = 'auto';
-  messageInput.style.height = messageInput.scrollHeight + 'px';
-});
 
 // Load chat history on startup
 loadChatHistory();
@@ -700,3 +754,10 @@ const createSettingsModal = () => {
   // Append modal to document body
   document.body.appendChild(modal);
 };
+
+// Add type declaration for the global variable
+declare global {
+  interface Window {
+    currentPlayingMessage: HTMLElement | null;
+  }
+}
